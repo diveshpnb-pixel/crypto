@@ -1,10 +1,345 @@
+
+Conversation with Gemini
+nifty 50 wala remove karo
+
+Nifty 50 scanner, /nifty route, aur NSE background polling ko render_bot.py se hata kar ek clean Top 10 Crypto Futures (2s Live + 24/7 Render Terminal + Sci-Fi HUD) file bana di gayi hai:
+
+PY icon
+render_bot
+ PY 
+Is update mein kya-kya hai:
+Nifty 50 Removed: TradingView /india/scan (429 Too Many Requests) aur /nifty routes/threads poori tarah hata diye gaye hain, taaki ab server sirf Top 10 Crypto Futures par hi kaam kare.
+
+2-Second Live Crypto Scan + 24/7 Telegram Alerts: Har 2 second mein live mark price, Wilder's 14 RSI, Daily UTC VWAP, 8h Funding filter, aur Hard SL (±2.0% / Split ±4.8%) update hota rahega.
+
+Sci-Fi HUD + Custom SVG Logo: Dark trading dashboard ke saath hexagonal SVG logo aur background radar/network simulation barkarar hai.
+
+Update Kaise Karein:
+Apni GitHub repository mein purani render_bot.py ko is nayi file se replace karke Commit changes kar dein.
+
+Render apne aap naya deploy chala dega—429 Nifty errors ab nahi aayenge.
+
+not working
+
+Aapke 2-Second Crypto Futures Live Web Terminal + 24/7 Render Bot ki ek fresh, clean render_bot.py file taiyar kar di gayi hai (aur syntax check bhi pass ho chuka hai):
+
+PY icon
+render_bot
+ PY 
+Is clean version mein kya-kya hai:
+Fast Startup Seed (seed_initial_snapshot): Server start hote hi turant coins aur prices populate ho jaate hain taaki dashboard khalte hi blank na dikhe.
+
+2-Second Live Crypto Engine: Har 2 second mein batch price polling + Wilder's 14 RSI + Daily UTC VWAP + 8h Funding filter + Hard SL (±2.0% / Split ±4.8%).
+
+Sci-Fi HUD + Custom Hexagonal Logo: Custom SVG logo aur background radar/neural network simulation ke saath poora dark web terminal.
+
+Nifty 50 Scanner Removed: 429 rate-limit errors dene wala Nifty 50 scanner hata diya gaya hai.
+
+Agar Render par abhi bhi koi dikkat aa rahi ho to check karein:
+GitHub par render_bot.py update karein: Is nayi file se purani render_bot.py ko replace karke Commit changes karein.
+
+Render Environment Variables check karein: Render dashboard → Environment tab mein TG_BOT_TOKEN aur TG_CHAT_ID sahi bhare hone chahiye (extra space ya quote na ho).
+
+Render Logs dekhein: Agar deploy fail ho ya koi error aaye, to Render ke Logs tab mein aakhiri 20–30 lines yahan paste kar dein—main exact error fix kar doonga.
+
+why telegram bot not send alert
+
+When the Telegram bot on your 2-second Render scanner (render_bot.py) does not send alerts, the cause is usually missing/misformatted environment variables, an unstarted chat with the bot, Render free-tier sleep, cooldown/filter blocks, or outbound network timeouts.   
+render_bot.py
+
+1
+Verify Environment Variables in Render
+2 min
+Open your Render service dashboard, go to Environment, and check that TG_BOT_TOKEN and TG_CHAT_ID are set with no extra spaces, line breaks, or quotation marks.
+Verification: Both keys appear under Environment Variables and match your @BotFather token and target chat ID.
+
+2
+Send /start to Your Bot in Telegram
+1 min
+Telegram bots cannot initiate a private message until the user or group sends /start (or adds the bot and sends a message in the target chat/channel).
+Verification: Open your bot chat in Telegram and confirm /start is sent and the bot is an admin if posting to a channel.
+
+3
+Check Render Logs for [TG ERROR] or Sleep
+2 min
+Go to Logs in Render and look for [TG ERROR] messages (such as Unauthorized or chat not found), or check if the service spun down due to 15 minutes of inactivity without a 5-minute external ping (UptimeRobot / cron-job.org).
+Verification: Logs show active 2s Scans and no [TG ERROR] lines when you click 24/7 TG Bot: READY (Test) on the web terminal.
+
+4
+Confirm Signal Conditions, Filters & Cooldown
+2 min
+Even when the bot is connected, alerts only fire when a coin meets RSI < long_th or RSI > short_th, passes the VWAP Filter (price >= vwap for longs, price <= vwap for shorts) and 8h Funding Filter (funding <= +0.01% for longs, funding >= 0% for shorts) if enabled, and is outside the TG_COOLDOWN_MIN window (default 15 minutes per coin/side/timeframe).
+Verification: Check the Active Signals tab on your terminal—if a coin shows LONG or SHORT there, test with /api/test-tg or temporarily lower/raise the RSI threshold to confirm delivery.
+
+Want me to add a Telegram log print when filters block a signal?
+
+Yes
+nifty 50 ke liye liye ek alag page banao aur usme bhi telegram bot alert envirment main jo add hai wo use ho
+
+Aapke Nifty 50 ke liye alag page (nifty50.html) aur Render backend (render_bot.py mein /nifty route + /api/nifty-alert) dono taiyar hain:
+
+HTML icon
+nifty50
+ HTML 
+PY icon
+render_bot
+ PY 
+Is Setup mein Kya-Kya Hai:
+Alag Nifty 50 Page (/nifty):
+
+Jab aap Render par [https://aapka-app.onrender.com/nifty](https://aapka-app.onrender.com/nifty) kholenge, to poora Nifty 50 Live RSI Screener (5m se 1Y timeframes, Sector/Signal filter, Equity Trade Log, Sci-Fi HUD aur Hexagonal logo) khulega.
+
+Main Crypto Futures page (/) ke header mein 🇮🇳 Nifty 50 NSE → aur Nifty 50 page ke header mein 🪙 Crypto Futures (24/7) → button se dono pages ke beech ek click mein switch kar sakte hain.
+
+Render Environment Telegram Bot Integration (Zero 429 Error):
+
+Nifty 50 page ab browser mein alag se Token/Chat ID nahi maangega—yeh seedha Render ke Environment Variables (TG_BOT_TOKEN aur TG_CHAT_ID) ka istemal karta hai.
+
+NSE data aapke browser se fetch hota hai (jisse Render ke shared IP par TradingView ka 429 Too Many Requests error nahi aayega), aur jaise hi koi Nifty 50 stock RSI < 35 (LONG) ya RSI > 70 (SHORT) cross karta hai, page /api/nifty-alert ke zariye aapke Render Telegram Bot se alert bhej deta hai.
+
+Nifty 50 page ke top bar mein Render TG Alert: ON toggle aur 🧪 Test TG button bhi diya gaya hai.
+
+Deploy Kaise Karein:
+Apni GitHub repository mein purani render_bot.py ko is nayi render_bot.py se replace karke Commit changes karein.
+
+Render par auto-deploy complete hone ke baad [https://aapka-app.onrender.com/nifty](https://aapka-app.onrender.com/nifty) kholein aur 🧪 Test TG dabakar Telegram connection verify kar lein.
+
+nifty 50 ka price alag dikha raha hai
+
+Nifty 50 पेज (/nifty) में कीमतें दूसरे चार्ट या ब्रोकर ऐप से अलग दिखने के पीछे ये मुख्य वजहें हो सकती हैं:
+
+डेटा सोर्स और डिले (TradingView vs Yahoo vs Broker): ब्राउज़र में TradingView Scanner ([scanner.tradingview.com/india/scan](https://scanner.tradingview.com/india/scan)) या Yahoo Finance (.NS) से डेटा आता है। कई बार Yahoo Finance के फीड में भारतीय शेयरों का डेटा कुछ मिनट डिले होता है, या regularMarketPrice और आखिरी कैंडल के close में हल्का अंतर दिख सकता है।
+
+इंडेक्स बनाम इंडिविजुअल स्टॉक्स: यह पेज Nifty 50 के 50 स्टॉक्स को स्कैन करता है, जबकि कई बार लोग स्क्रीन पर Nifty 50 Index के लेवल से तुलना करते हैं।
+
+मार्केट टाइमिंग / प्री-ओपन / पोस्ट-मार्केट: NSE के लाइव सेशन (9:15 AM – 3:30 PM IST) के बाहर या वीकेंड पर अलग-अलग सोर्स अलग-अलग कैंडल या क्लोज़िंग वैल्यू दिखा सकते हैं।
+
+सॉर्स स्विच या रिफ्रेश: अगर Auto मोड में कोई एक सोर्स धीमा या अटक जाए, तो दूसरे सोर्स (TradingView NSE Direct या Yahoo Finance) पर स्विच करके Refresh दबाने से लाइव वैल्यू अपडेट होती है।
+
+क्या चेक करें:
+टॉप बार में Data Source को TradingView NSE Direct या Yahoo Finance पर बदलकर Refresh दबाएं।
+
+जिस स्टॉक में अंतर दिख रहा है, उसका नाम या सिंबल और स्क्रीन पर दिख रही कीमत बता दें—मैं देख लूँगा कि वह किस सोर्स से और किस वजह से अलग आ रही है।
+
+Environment Variables main 2 telegram bot add ker sakte hai
+
+Haan, Render Environment Variables mein 2 Telegram bots bilkul add kiye ja sakte hain—jaise ek bot Crypto Futures alerts ke liye aur doosra bot Nifty 50 alerts ke liye (ya alag-alag group/channel ke liye).
+
+Bas aapko Environment Variables ke naam alag rakhne honge aur code (render_bot.py / nifty50.html) mein unhe read karwana hoga.   
+render_bot.py
+
+1. Render Environment Variables mein Kaise Add Karein
+Render dashboard → Environment tab mein ye keys add karein:
+
+Bot 1 (Crypto Futures):
+
+CRYPTO_TG_BOT_TOKEN = Crypto bot ka token
+
+CRYPTO_TG_CHAT_ID = Crypto chat/channel ID
+
+Bot 2 (Nifty 50 NSE):
+
+NIFTY_TG_BOT_TOKEN = Nifty 50 bot ka token
+
+NIFTY_TG_CHAT_ID = Nifty 50 chat/channel ID
+
+(Agar kisi ek ke liye alag variable set nahi hai, to fallback ke roop mein purane TG_BOT_TOKEN aur TG_CHAT_ID ka use bhi kiya ja sakta hai).
+
+2. Code mein Kaise Use Hoga
+Crypto scanner (scanner_worker aur /api/test-tg): CRYPTO_TG_BOT_TOKEN aur CRYPTO_TG_CHAT_ID (fallback TG_BOT_TOKEN / TG_CHAT_ID) use karega.
+
+Nifty 50 alert endpoint (/api/nifty-alert): NIFTY_TG_BOT_TOKEN aur NIFTY_TG_CHAT_ID (fallback TG_BOT_TOKEN / TG_CHAT_ID) use karega.
+
+
+render_bot.py
+Kya aap chahte hain ki main render_bot.py aur nifty50.html mein ye 2-Bot Environment Variable support (CRYPTO_TG_* aur NIFTY_TG_*) add karke de doon?
+
+nahi 2 bot ek hi signal ko do user ko send kare
+
+Bilkul ho sakta hai—ek hi signal trigger hone par 2 bots (ya 2 alag users/chats) ko ek saath alert bhejne ke liye Render Environment Variables mein ye keys add karein:
+
+1. Render Environment Variables mein Keys
+Bot / User 1:
+
+TG_BOT_TOKEN = Pehle bot ka token
+
+TG_CHAT_ID = Pehle user / chat ki ID
+
+Bot / User 2:
+
+TG_BOT_TOKEN_2 = Doosre bot ka token (agar wahi pehla bot use karna hai to isey khali chhod sakte hain, code apne aap TG_BOT_TOKEN utha lega)
+
+TG_CHAT_ID_2 = Doosre user / chat ki ID
+
+(Dhyan rahe: Doosre user ko pehle Telegram par aapke doosre bot ko /start bhejna hoga, warna Telegram bot unhe direct message nahi bhej payega.)
+
+2. render_bot.py mein send_telegram ko is tarah update karein
+Python
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "").strip()
+TG_CHAT_ID = os.getenv("TG_CHAT_ID", "").strip()
+TG_BOT_TOKEN_2 = os.getenv("TG_BOT_TOKEN_2", "").strip()
+TG_CHAT_ID_2 = os.getenv("TG_CHAT_ID_2", "").strip()
+
+
+def _post_tg_single(tk: str, cid: str, html_text: str):
+    url = f"https://api.telegram.org/bot{tk}/sendMessage"
+    try:
+        r = SESSION.post(
+            url,
+            data={"chat_id": cid, "text": html_text, "parse_mode": "HTML"},
+            timeout=6,
+        )
+        data = r.json()
+        if not r.ok or not data.get("ok"):
+            err = data.get("description", f"HTTP {r.status_code}")
+            print(f"[TG ERROR] ({cid}): {err}")
+            return False, err
+        return True, "OK"
+    except Exception as exc:
+        print(f"[TG ERROR] ({cid}): {exc}")
+        return False, str(exc)
+
+
+def send_telegram(html_text: str, token: str = None, chat_id: str = None):
+    targets = []
+    tk1 = (token or TG_BOT_TOKEN).strip()
+    cid1 = (chat_id or TG_CHAT_ID).strip()
+    if tk1 and cid1:
+        targets.append((tk1, cid1))
+
+    tk2 = TG_BOT_TOKEN_2.strip() or tk1
+    cid2 = TG_CHAT_ID_2.strip()
+    if tk2 and cid2 and (tk2, cid2) not in targets:
+        targets.append((tk2, cid2))
+
+    if not targets:
+        return False, "Missing TG_BOT_TOKEN / TG_CHAT_ID in Render Environment"
+
+    any_ok = False
+    errors = []
+    for tk, cid in targets:
+        ok, err = _post_tg_single(tk, cid, html_text)
+        if ok:
+            any_ok = True
+        else:
+            errors.append(f"{cid}: {err}")
+
+    if any_ok:
+        return True, "OK"
+    return False, " | ".join(errors)
+Saath hi SHARED_STATE mein tg_configured ko bhi update kar dein taaki sirf TG_BOT_TOKEN_2 + TG_CHAT_ID_2 set hone par bhi status active dikhe:
+
+Python
+"tg_configured": bool((TG_BOT_TOKEN and TG_CHAT_ID) or (TG_BOT_TOKEN_2 and TG_CHAT_ID_2)),
+Iske baad jab bhi koi Crypto ya Nifty 50 signal trigger hoga, send_telegram dono configured bot/chat targets par same message bhej dega. Kya aap chahte hain ki main isme 3rd user ya group alert support bhi isi pattern mein jodne ka tarika bata doon?
+
+kya ye msg group main add ho sakta hai
+
+Haan, ye alerts Telegram group ya channel mein bilkul bheje ja sakte hain. Code mein koi bada badlav karne ki zaroorat nahi hai—bas sahi Group/Channel Chat ID aur Bot Permissions set karni hoti hain.
+
+Telegram Group / Channel mein Alert Bhejne ka Tarika
+Bot ko Group/Channel mein Add Karein: Apne Telegram bot ko us group ya channel mein add karein jahan aap alerts chahte hain.
+
+Channel ke liye Admin Banayein: Agar aap Telegram Channel use kar rahe hain, to bot ko channel ka Admin banana zaroori hai (aur Post Messages permission on rakhein). Regular Group mein add karne par aam taur par kaam chal jata hai, lekin privacy settings ke hisaab se admin banana kabhi-kabhi zaroori hota hai.
+
+Group Chat ID Nikalein: Telegram group ki ID aam taur par -100 se shuru hoti hai (jaise -1001234567890). Aap @userinfobot ya @RawDataBot ko group mein add karke (ya bot ko group mein message bhejne ke baad [https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/getUpdates open karke "chat":{"id":-100...}) exact Chat ID dekh sakte hain.
+
+Render Environment Variable mein Daalein: Render ke Environment tab mein TG_CHAT_ID (ya TG_CHAT_ID_2) mein woh -100... wali Group/Channel ID daal kar Save Changes kar dein.
+
+Test Message se Verify Karein: Group mein ek message bhejein ya dashboard/test endpoint se test alert trigger karke dekhein ki group mein message aa raha hai ya nahi.
+
+(Agar aap chaho to ek bot ko apne personal chat mein aur doosre bot/target ko apne trading group mein bhi set kar sakte hain—TG_CHAT_ID mein personal ID aur TG_CHAT_ID_2 mein -100... wali group ID daal kar).
+
+Kya aap apne 2nd target (TG_CHAT_ID_2) ko group ID par set karna chahte hain ya kisi ek naye group mein alert route karna hai?
+
+back ground transparent tile aur more attractive and jarvis ka backgroun interface ho
+
+https://lh3.googleusercontent.com/gg/AJWXcNfR3xsClyB7aVsC2vq4j9z7OaCbi-zFWaQQXHP5ogyXSrkOZ0_k3xL_aI3m2piH7BCcBiOu2jFy_8GF3WgWcRymf-Wmr-OeuLqM8u9-uYD84ScV8jngUWcHUz_ddExdgqOLr-40FKjeCUcUVJ4Rf-iMI54pIJsd-qUhF58RkB3U_9DkXd7a_uHaZsZ_4RNpvEN1-h4tE0ayqUQigotYv89dnobZOl5nqyhAIKSNZZrghmG9GvFhL1ktqS3LXW4BdY7UDCJ6LMDx-_v_IZtMdaSsu-3HQdpE_qW3W4Jig0nX1QjW8-ydX-HW1c_qbryA70XSCs_QL1CkGWKGg_0Y0WOY=s1600
+Aapke JARVIS Transparent Glass Tile + Holographic HUD interface ka visual preview upar dikhaya gaya hai (sample placeholder data ke saath).
+
+Is JARVIS Interface mein Kya-Kya Hai:
+Transparent Glass Tiles (rgba(8, 18, 36, 0.34) + backdrop-filter: blur): KPI cards, screener table, aur control panels semi-transparent glass tiles jaise dikhenge, jinke peeche background ki animated grid, radar rings, aur data streams halki-halki nazar aayengi.
+
+J.A.R.V.I.S. Holographic HUD Canvas:
+
+Arc Reactor & Radar Rings: Center aur top-right mein segmented rotating rings, degree ticks, aur radar sweep beam.
+
+Vertical Telemetry Streams & Node Mesh: Upar se neeche chalti hui cyan/emerald data lines, connected holographic nodes, aur bottom mein live oscilloscope wave.
+
+Cyan + Emerald Glass Borders: Top highlight lines aur soft glow ke saath clean dark-tech look.
+
+(Note: Kyunki Python container ke har step mein nayi temporary workspace run hoti hai, isliye pichhli step mein render_bot_8.py file is naye container mein present nahi thi—preview ke liye visual HUD layout generate kiya gaya hai.)
+
+Kya aap chahte hain ki main is JARVIS Transparent Glass HUD CSS aur Canvas JS ko ek clean ready-to-copy block mein de doon taaki aap ise seedha apne render_bot.py aur nifty50.html mein paste kar sakein?
+
+yes
+
+Your updated J.A.R.V.I.S. transparent glass HUD files (render_bot.py and nifty50.html) are ready:
+
+PY icon
+render_bot
+ PY 
+HTML icon
+nifty50
+ HTML 
+What Is Included in This Update
+J.A.R.V.I.S. Holographic HUD & Transparent Glass Tiles:
+
+Semi-transparent glass tiles (rgba(8, 18, 36, 0.34) with backdrop-filter: blur) across KPI cards, tables, and control bars so the animated background stays visible beneath the UI.
+
+Live HTML5 Canvas background featuring dual counter-rotating Arc Reactor rings, degree ticks, radar sweep beam, vertical telemetry data streams, connected holographic nodes, and a bottom oscilloscope wave.
+
+Dual Telegram Bot / User / Group Support:
+
+Supports TG_BOT_TOKEN + TG_CHAT_ID alongside TG_BOT_TOKEN_2 + TG_CHAT_ID_2 (works for a second user chat or a -100... Telegram group/channel ID) for both Crypto Futures (/) and Nifty 50 (/nifty) alerts.
+
+How to Deploy on GitHub & Render
+Replace your existing render_bot.py in your GitHub repository with the newly generated render_bot.py and click Commit changes.
+
+In Render's Environment tab, ensure TG_BOT_TOKEN and TG_CHAT_ID are set (and optionally add TG_BOT_TOKEN_2 / TG_CHAT_ID_2 for your second user or Telegram group).
+
+Once Render finishes deploying, open your main URL (/ for Crypto Futures, /nifty for Nifty 50) and click Test TG to confirm alerts arrive on all configured Telegram targets.
+
+porfoliyo bhi bana do new page main
+
+Your J.A.R.V.I.S. Unified Live Portfolio & P&L page (portfolio.html) and updated 3-route server (render_bot.py) are ready:
+
+HTML icon
+portfolio
+ HTML 
+PY icon
+render_bot
+ PY 
+What Is Included in the Portfolio Page (/portfolio)
+Unified Crypto Futures + Nifty 50 Live P&L: Automatically reads and syncs all trades logged from / (Crypto Futures) and /nifty (Nifty 50 NSE), converting Crypto USDT margin and P&L into a combined INR valuation using an editable live USD/INR rate (84.5 default).
+
+6 Real-Time KPI Cards & Visual Meters: Tracks Crypto Margin (USDT), Nifty 50 Capital (INR), Net Combined Value (INR), Realized Closed P&L, Win Rate %, Active Positions count, Capital Allocation bar (Crypto vs. Nifty 50), and Position Health bars (In Profit / Neutral / Drawdown).
+
+Open & Closed Trade Management: Add new Crypto or Nifty 50 trades with one-click Fill Live Price, close open positions with ✓ Close to lock in realized P&L into the Closed History tab, filter by market (All, Crypto, Nifty 50), and export the full open + closed ledger via ⬇ Export Full CSV.
+
+Seamless 3-Page J.A.R.V.I.S. Navigation: Top header links let you jump directly between / (Crypto Futures), /nifty (Nifty 50 NSE), and /portfolio (Live Portfolio) with the same transparent glass tile HUD and dual Telegram bot support.
+
+How to Update on Render
+Replace render_bot.py in your GitHub repository with the newly generated render_bot.py and commit the changes.
+
+Once Render finishes deploying, open [https://your-app.onrender.com/portfolio](https://your-app.onrender.com/portfolio) (or click 💼 Live Portfolio → in the header of / or /nifty).
+
+
+
+
+
+Gemini is AI and can make mistakes.
+
+Processed and analyzed in code
 #!/usr/bin/env python3
 """
-Top 10 Crypto Futures (24/7 2s Scanner) + Dedicated Nifty 50 NSE Page (/nifty)
--------------------------------------------------------------------------------
-- "/"      : Crypto Futures 2-Second Live Web Terminal + 24/7 Background Telegram Bot
-- "/nifty" : Dedicated Nifty 50 Live RSI Screener (5m to 1Y) + Sci-Fi HUD + Render Env TG Alerts
-- Uses Render's TG_BOT_TOKEN and TG_CHAT_ID environment variables for both Crypto and Nifty 50
+J.A.R.V.I.S. Live Trading Terminal — Crypto (/), Nifty 50 (/nifty) & Portfolio (/portfolio)
+-------------------------------------------------------------------------------------------
+- "/"          : Top 10 Crypto Futures 2-Second Live Terminal + 24/7 Telegram Alerts
+- "/nifty"     : Dedicated Nifty 50 Live RSI Screener (5m to 1Y) + Dual Render TG Alerts
+- "/portfolio" : Unified Live Portfolio, Capital Allocation, Realized P&L & Win Rate Tracker
+- Transparent Glass Tile HUD + Holographic Arc Reactor Canvas Simulation
+- Dual Telegram Bot / Group / Recipient Support (TG_BOT_TOKEN + TG_CHAT_ID & TG_BOT_TOKEN_2 + TG_CHAT_ID_2)
 """
 
 import os
@@ -24,6 +359,8 @@ import requests
 # =============================================================================
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "").strip()
 TG_CHAT_ID = os.getenv("TG_CHAT_ID", "").strip()
+TG_BOT_TOKEN_2 = os.getenv("TG_BOT_TOKEN_2", "").strip()
+TG_CHAT_ID_2 = os.getenv("TG_CHAT_ID_2", "").strip()
 
 CONFIG = {
     "timeframe": os.getenv("TIMEFRAME", "15m").strip() or "15m",
@@ -64,7 +401,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "Crypto-Nifty-RenderTerminal/5.0"})
+SESSION.headers.update({"User-Agent": "JARVIS-Crypto-Nifty-Portfolio/7.0"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -78,7 +415,7 @@ SHARED_STATE = {
     "poll_interval_sec": POLL_INTERVAL_SEC,
     "scans_completed": 0,
     "alerts_sent": 0,
-    "tg_configured": bool(TG_BOT_TOKEN and TG_CHAT_ID),
+    "tg_configured": bool((TG_BOT_TOKEN and TG_CHAT_ID) or (TG_BOT_TOKEN_2 and TG_CHAT_ID_2)),
     "coins": [],
     "alert_history": [],
 }
@@ -380,7 +717,7 @@ def fetch_live_prices_batch() -> tuple[str, dict[str, float]]:
 
 
 # =============================================================================
-# 5. SIGNAL LOGIC & TELEGRAM SENDER (SHARED BY CRYPTO & NIFTY 50)
+# 5. SIGNAL LOGIC & DUAL TELEGRAM SENDER (SUPPORTS 2 BOTS / USERS / GROUPS)
 # =============================================================================
 def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -> str:
     if rsi is None or price is None:
@@ -398,11 +735,7 @@ def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -
     return "WAIT"
 
 
-def send_telegram(html_text: str, token: str = None, chat_id: str = None):
-    tk = (token or TG_BOT_TOKEN).strip()
-    cid = (chat_id or TG_CHAT_ID).strip()
-    if not tk or not cid:
-        return False, "Missing TG_BOT_TOKEN or TG_CHAT_ID in Render Environment"
+def _post_tg_single(tk: str, cid: str, html_text: str):
     url = f"https://api.telegram.org/bot{tk}/sendMessage"
     try:
         r = SESSION.post(
@@ -413,12 +746,41 @@ def send_telegram(html_text: str, token: str = None, chat_id: str = None):
         data = r.json()
         if not r.ok or not data.get("ok"):
             err = data.get("description", f"HTTP {r.status_code}")
-            print(f"[TG ERROR] {err}")
+            print(f"[TG ERROR] ({cid}): {err}")
             return False, err
         return True, "OK"
     except Exception as exc:
-        print(f"[TG ERROR] {exc}")
+        print(f"[TG ERROR] ({cid}): {exc}")
         return False, str(exc)
+
+
+def send_telegram(html_text: str, token: str = None, chat_id: str = None):
+    targets = []
+    tk1 = (token or TG_BOT_TOKEN).strip()
+    cid1 = (chat_id or TG_CHAT_ID).strip()
+    if tk1 and cid1:
+        targets.append((tk1, cid1))
+
+    tk2 = TG_BOT_TOKEN_2.strip() or tk1
+    cid2 = TG_CHAT_ID_2.strip()
+    if tk2 and cid2 and (tk2, cid2) not in targets:
+        targets.append((tk2, cid2))
+
+    if not targets:
+        return False, "Missing TG_BOT_TOKEN / TG_CHAT_ID in Render Environment"
+
+    any_ok = False
+    errors = []
+    for tk, cid in targets:
+        ok, err = _post_tg_single(tk, cid, html_text)
+        if ok:
+            any_ok = True
+        else:
+            errors.append(f"{cid}: {err}")
+
+    if any_ok:
+        return True, "OK"
+    return False, " | ".join(errors)
 
 
 def format_signal_msg(item: dict, side: str, price: float, rsi: float, vwap: float, vwap_diff: float, funding, source: str, cfg: dict) -> str:
@@ -642,2465 +1004,43 @@ def scanner_worker():
 
 
 # =============================================================================
-# 7. EMBEDDED HTML PAGES ("/" CRYPTO TERMINAL & "/nifty" NIFTY 50 TERMINAL)
+# 7. EMBEDDED HTML PAGES ("/", "/nifty", "/portfolio")
 # =============================================================================
-NIFTY_HTML = r"""<!DOCTYPE html>
+PORTFOLIO_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nifty 50 Live RSI Screener (5m – 1Y) — 24/7 Render Terminal</title>
+  <title>J.A.R.V.I.S. Live Portfolio &amp; P&amp;L Terminal — Crypto + Nifty 50</title>
   <style>
     :root {
-      --bg-main: #0b1120;
-      --bg-header: rgba(11, 17, 32, 0.96);
-      --bg-card: #111827;
-      --bg-card-hover: #162033;
-      --bg-input: #0f172a;
-      --border: #1e293b;
-      --border-light: #334155;
+      --bg-main: #030914;
+      --bg-header: rgba(5, 13, 27, 0.72);
+      --bg-card: rgba(8, 18, 36, 0.34);
+      --bg-card-hover: rgba(14, 116, 144, 0.22);
+      --bg-input: rgba(6, 15, 30, 0.75);
+      --border: rgba(56, 189, 248, 0.22);
+      --border-light: rgba(103, 232, 249, 0.35);
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
       --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.14);
-      --green-border: rgba(16, 185, 129, 0.38);
+      --green-bg: rgba(16, 185, 129, 0.16);
+      --green-border: rgba(16, 185, 129, 0.42);
       --red: #f43f5e;
-      --red-bg: rgba(244, 63, 94, 0.14);
-      --red-border: rgba(244, 63, 94, 0.38);
+      --red-bg: rgba(244, 63, 94, 0.16);
+      --red-border: rgba(244, 63, 94, 0.42);
       --amber: #f59e0b;
-      --amber-bg: rgba(245, 158, 11, 0.14);
-      --amber-border: rgba(245, 158, 11, 0.35);
+      --amber-bg: rgba(245, 158, 11, 0.16);
+      --amber-border: rgba(245, 158, 11, 0.38);
       --cyan: #06b6d4;
       --cyan-light: #67e8f9;
-      --cyan-bg: rgba(6, 182, 212, 0.14);
-      --cyan-border: rgba(6, 182, 212, 0.35);
-      --radius: 10px;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      font-family: var(--font-sans);
-      font-size: 14px;
-      line-height: 1.45;
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    ::-webkit-scrollbar { width: 7px; height: 7px; }
-    ::-webkit-scrollbar-track { background: var(--bg-main); }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-    .mono {
-      font-family: var(--font-mono);
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: "tnum" 1;
-    }
-
-    .text-green { color: var(--green); }
-    .text-red { color: var(--red); }
-    .text-amber { color: var(--amber); }
-    .text-cyan { color: var(--cyan-light); }
-    .text-muted { color: var(--text-muted); }
-    .text-dim { color: var(--text-dim); }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .hidden { display: none !important; }
-
-    @keyframes flashUp {
-      0% { background-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
-      100% { background-color: transparent; }
-    }
-    @keyframes flashDown {
-      0% { background-color: rgba(244, 63, 94, 0.35); color: #fda4af; }
-      100% { background-color: transparent; }
-    }
-    .tick-up { animation: flashUp 0.7s ease-out; }
-    .tick-down { animation: flashDown 0.7s ease-out; }
-
-    @keyframes pulseDot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-    .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .spinning { display: inline-block; animation: spin 0.8s linear infinite; }
-
-    /* ==================== SCI-FI HUD SIMULATION BACKGROUND ==================== */
-    #sciFiBgCanvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-      opacity: 0.68;
-    }
-
-    .sci-fi-vignette {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 50% 15%, rgba(6, 182, 212, 0.08), transparent 55%),
-        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.07), transparent 50%),
-        repeating-linear-gradient(0deg, rgba(6, 182, 212, 0.018) 0px, rgba(6, 182, 212, 0.018) 1px, transparent 1px, transparent 4px);
-    }
-
-    .header, .main, .toast-wrap {
-      position: relative;
-      z-index: 2;
-    }
-    .header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      background: var(--bg-header);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(10px);
-    }
-    .card, .kpi-card {
-      background: rgba(17, 24, 39, 0.84) !important;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 0 24px rgba(6, 182, 212, 0.04);
-    }
-
-    .container {
-      max-width: 1640px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-
-    .header-inner {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 0;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .brand-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #10b981, #06b6d4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #04131c;
-      font-weight: 800;
-      font-size: 14px;
-      flex-shrink: 0;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(103, 232, 249, 0.55);
-      box-shadow: 0 0 18px rgba(6, 182, 212, 0.45), inset 0 0 10px rgba(255, 255, 255, 0.25);
-    }
-
-    .brand-title {
-      font-size: 16px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .brand-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid var(--border);
-    }
-
-    .pill-tf {
-      background: var(--cyan-bg);
-      color: var(--cyan-light);
-      border-color: var(--cyan-border);
-    }
-
-    .pill-nse {
-      background: var(--amber-bg);
-      color: #fcd34d;
-      border-color: var(--amber-border);
-      font-size: 10px;
-    }
-
-    .live-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 12px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--amber);
-      flex-shrink: 0;
-    }
-    .status-dot.live { background: var(--green); box-shadow: 0 0 8px rgba(16, 185, 129, 0.75); }
-    .status-dot.error { background: var(--red); }
-
-    .live-sep { color: var(--border-light); user-select: none; }
-
-    .controls-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 0;
-      border-top: 1px solid rgba(30, 41, 59, 0.6);
-    }
-
-    .tf-strip {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 2px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 2px;
-      max-width: 100%;
-    }
-
-    .control-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-
-    .control-group label {
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    select, input[type="number"], input[type="text"] {
-      background: var(--bg-input);
-      color: var(--text-main);
-      border: 1px solid var(--border-light);
-      border-radius: 6px;
-      padding: 5px 8px;
-      font-size: 12px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    select:focus, input:focus { border-color: var(--cyan); }
-
-    .input-sm {
-      width: 52px;
-      text-align: center;
-      padding: 3px 4px !important;
-      font-weight: 700;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid var(--border-light);
-      background: #1e293b;
-      color: var(--text-main);
-      transition: all 0.15s;
-      white-space: nowrap;
-      text-decoration: none;
-    }
-    .btn:hover { background: #273549; border-color: #475569; }
-    .btn:active { transform: scale(0.97); }
-
-    .btn-tf {
-      padding: 4px 8px;
-      font-size: 11px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--text-muted);
-      border-radius: 6px;
-    }
-    .btn-tf:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .btn-tf.active {
-      background: var(--green-bg);
-      color: #34d399;
-      border-color: var(--green-border);
-    }
-
-    .btn-sound.active {
-      background: var(--green-bg);
-      color: #34d399;
-      border-color: var(--green-border);
-    }
-
-    .btn-tg.active {
-      background: var(--cyan-bg);
-      color: var(--cyan-light);
-      border-color: var(--cyan-border);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #10b981, #06b6d4);
-      color: #04131c;
-      border: none;
-      font-weight: 700;
-    }
-    .btn-primary:hover { filter: brightness(1.08); }
-
-    .btn-long {
-      padding: 4px 8px;
-      font-size: 11px;
-      background: var(--green-bg);
-      color: #34d399;
-      border-color: var(--green-border);
-      border-radius: 6px;
-    }
-    .btn-long:hover { background: rgba(16, 185, 129, 0.25); }
-
-    .btn-short {
-      padding: 4px 8px;
-      font-size: 11px;
-      background: var(--red-bg);
-      color: #fb7185;
-      border-color: var(--red-border);
-      border-radius: 6px;
-    }
-    .btn-short:hover { background: rgba(244, 63, 94, 0.25); }
-
-    .btn-del {
-      padding: 4px 7px;
-      font-size: 11px;
-      background: transparent;
-      color: var(--text-muted);
-      border-color: transparent;
-    }
-    .btn-del:hover { color: var(--red); background: var(--red-bg); }
-
-    .error-banner {
-      margin-bottom: 14px;
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      background: rgba(244, 63, 94, 0.12);
-      border: 1px solid var(--red-border);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 12px;
-      color: #fecdd3;
-    }
-
-    .progress-bar-wrap {
-      height: 3px;
-      background: var(--border);
-      width: 100%;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #10b981, #06b6d4);
-      transition: width 0.25s ease;
-    }
-
-    .main { padding: 16px 0 36px; }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .kpi-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 13px 14px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: border-color 0.15s;
-    }
-    .kpi-card.clickable { cursor: pointer; }
-    .kpi-card.clickable:hover { border-color: var(--border-light); background: var(--bg-card-hover); }
-
-    .kpi-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text-muted);
-    }
-
-    .kpi-val {
-      font-size: 20px;
-      font-weight: 700;
-      margin-top: 6px;
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .kpi-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .tabs-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
-      margin-bottom: 14px;
-    }
-
-    .tabs-list { display: flex; flex-wrap: wrap; gap: 6px; }
-
-    .tab-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.04); }
-    .tab-btn.active {
-      background: #1e293b;
-      color: #fff;
-      border-color: var(--border-light);
-    }
-
-    .tab-badge {
-      padding: 1px 7px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 700;
-      background: rgba(6, 182, 212, 0.2);
-      color: var(--cyan-light);
-    }
-
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .table-wrap { overflow-x: auto; width: 100%; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      white-space: nowrap;
-      font-size: 13px;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #0f172a;
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--border);
-      user-select: none;
-    }
-
-    thead th.sortable { cursor: pointer; }
-    thead th.sortable:hover { color: #fff; }
-
-    tbody tr {
-      border-bottom: 1px solid rgba(30, 41, 59, 0.7);
-      transition: background-color 0.12s;
-    }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(30, 41, 59, 0.45); }
-    tbody tr.row-long { background: rgba(16, 185, 129, 0.06); }
-    tbody tr.row-long:hover { background: rgba(16, 185, 129, 0.12); }
-    tbody tr.row-short { background: rgba(244, 63, 94, 0.06); }
-    tbody tr.row-short:hover { background: rgba(244, 63, 94, 0.12); }
-
-    tbody td { padding: 10px 12px; vertical-align: middle; }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid transparent;
-    }
-    .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
-    .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
-    .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
-    .badge-be { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .badge-neutral { background: #1e293b; color: #cbd5e1; border-color: #334155; }
-
-    .sector-tag {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 5px;
-      font-size: 10px;
-      font-weight: 600;
-      background: rgba(148, 163, 184, 0.1);
-      color: var(--text-muted);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-    }
-
-    .rsi-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 115px;
-    }
-    .rsi-bar-bg {
-      flex: 1;
-      height: 6px;
-      background: #1e293b;
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .rsi-bar-fill {
-      height: 100%;
-      border-radius: 99px;
-      transition: width 0.3s ease;
-    }
-
-    .action-btns { display: inline-flex; gap: 5px; }
-
-    .signals-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .signal-header {
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .signal-header.long-hd { background: rgba(16, 185, 129, 0.09); border-bottom-color: var(--green-border); }
-    .signal-header.short-hd { background: rgba(244, 63, 94, 0.09); border-bottom-color: var(--red-border); }
-
-    .empty-state {
-      padding: 36px 20px;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .form-card { padding: 16px; margin-bottom: 14px; }
-
-    .form-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 10px;
-      align-items: end;
-    }
-
-    .field label {
-      display: block;
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-    .field input, .field select { width: 100%; padding: 7px 9px; }
-
-    .toast-wrap {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      z-index: 60;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-width: 340px;
-      pointer-events: none;
-    }
-
-    .toast {
-      pointer-events: auto;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 600;
-      background: #0f172a;
-      border: 1px solid var(--border-light);
-      color: var(--text-main);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.45);
-      animation: fadeSlide 0.25s ease-out;
-    }
-    .toast.long { border-color: var(--green-border); color: #6ee7b7; background: #06281e; }
-    .toast.short { border-color: var(--red-border); color: #fda4af; background: #2d0a15; }
-    .toast.error { border-color: var(--red-border); color: #fecdd3; background: #2d0a15; }
-
-    @keyframes fadeSlide {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 1150px) {
-      .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    @media (max-width: 860px) {
-      .signals-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px) {
-      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .summary-grid { grid-template-columns: 1fr; }
-      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-  </style>
-</head>
-<body>
-  <canvas id="sciFiBgCanvas"></canvas>
-  <div class="sci-fi-vignette"></div>
-
-  <header class="header">
-    <div class="container">
-      <div class="header-inner">
-        <div class="brand">
-          <div class="brand-icon" title="Nifty 50 Quantum Scanner">
-            <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <defs>
-                <linearGradient id="sciGradN50" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#04131c"/>
-                  <stop offset="100%" stop-color="#022c22"/>
-                </linearGradient>
-              </defs>
-              <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="url(#sciGradN50)" stroke="#04131c" stroke-width="1.5"/>
-              <circle cx="18" cy="18" r="10.5" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4 3"/>
-              <path d="M9 21L14 15L18.5 19.5L27 11" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="27" cy="11" r="2.5" fill="#10b981"/>
-              <circle cx="14" cy="15" r="1.8" fill="#67e8f9"/>
-            </svg>
-          </div>
-          <div>
-            <div class="brand-title">
-              <span>Nifty 50 Live RSI Screener</span>
-              <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
-              <span class="pill pill-nse mono">NSE EQ</span>
-              <a href="/" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--cyan-border); color: var(--cyan-light);">🪙 Crypto Futures (24/7) →</a>
-            </div>
-            <div class="brand-sub">5m to 1Y Timeframes • Render Env Telegram Bot Connected • Wilder's 14 RSI • Multi-Source NSE</div>
-          </div>
-        </div>
-
-        <div class="live-bar">
-          <span id="liveDot" class="status-dot pulse-dot"></span>
-          <strong id="liveFeedName" class="mono">INITIALIZING...</strong>
-          <span class="live-sep">|</span>
-          <span class="text-muted">Loaded: <strong id="liveLoadedCount" class="mono text-cyan">0/50</strong></span>
-          <span class="live-sep">|</span>
-          <span class="text-muted">Scans: <strong id="liveScanCount" class="mono text-cyan">0</strong></span>
-          <span class="live-sep">|</span>
-          <span id="liveTimestamp" class="mono text-muted">--:--:-- IST</span>
-          <button id="refreshBtn" type="button" class="btn" style="padding: 3px 9px; font-size: 11px;">
-            <span id="refreshSpin">↻</span> Refresh
-          </button>
-        </div>
-      </div>
-
-      <div class="controls-bar">
-        <div class="control-group">
-          <label for="sourceSelect">Data Source:</label>
-          <select id="sourceSelect">
-            <option value="auto" selected>Auto (TV + Yahoo RSI)</option>
-            <option value="tv_direct">TradingView NSE Direct</option>
-            <option value="yahoo_allorigins">Yahoo Finance (AllOrigins)</option>
-            <option value="yahoo_codetabs">Yahoo Finance (CodeTabs)</option>
-          </select>
-        </div>
-
-        <div class="tf-strip" role="group" aria-label="Timeframe selector">
-          <button type="button" data-tf="5m" class="btn btn-tf">5m</button>
-          <button type="button" data-tf="15m" class="btn btn-tf active">15m</button>
-          <button type="button" data-tf="30m" class="btn btn-tf">30m</button>
-          <button type="button" data-tf="1h" class="btn btn-tf">1h</button>
-          <button type="button" data-tf="2h" class="btn btn-tf">2h</button>
-          <button type="button" data-tf="4h" class="btn btn-tf">4h</button>
-          <button type="button" data-tf="1d" class="btn btn-tf">1D</button>
-          <button type="button" data-tf="1w" class="btn btn-tf">1W</button>
-          <button type="button" data-tf="1mo" class="btn btn-tf">1M</button>
-          <button type="button" data-tf="1y" class="btn btn-tf">1Y</button>
-        </div>
-
-        <div class="control-group">
-          <label for="intervalSelect">Auto Sync:</label>
-          <select id="intervalSelect">
-            <option value="5000">Every 5s</option>
-            <option value="10000" selected>Every 10s</option>
-            <option value="30000">Every 30s</option>
-            <option value="60000">Every 60s</option>
-            <option value="0">Manual</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label for="longThInput" class="text-green">Long RSI &lt;</label>
-          <input id="longThInput" type="number" min="10" max="55" value="35" class="input-sm mono text-green" />
-        </div>
-
-        <div class="control-group">
-          <label for="shortThInput" class="text-red">Short RSI &gt;</label>
-          <input id="shortThInput" type="number" min="45" max="90" value="70" class="input-sm mono text-red" />
-        </div>
-
-        <button id="soundToggleBtn" type="button" class="btn btn-sound">
-          <span id="soundIcon">🔇</span>
-          <span id="soundLabel">Sound: OFF</span>
-        </button>
-
-        <!-- Uses Render Environment Variables (TG_BOT_TOKEN & TG_CHAT_ID) via /api/nifty-alert & /api/test-tg -->
-        <button id="tgToggleBtn" type="button" class="btn btn-tg active" title="Render Environment mein set TG_BOT_TOKEN aur TG_CHAT_ID par auto alerts bhejta hai">
-          <span>✈️</span>
-          <span id="tgLabel">Render TG Alert: ON</span>
-        </button>
-        <button id="tgTestBtn" type="button" class="btn" title="Render Environment Telegram Bot se test message bhejein">
-          🧪 Test TG
-        </button>
-      </div>
-    </div>
-    <div class="progress-bar-wrap"><div id="loadProgressBar" class="progress-bar-fill"></div></div>
-  </header>
-
-  <main class="main container">
-    <div id="networkErrorBanner" class="error-banner hidden">
-      <div>
-        <strong>Unable to reach live NSE feeds right now.</strong>
-        <span id="networkErrorDetail"> Check your internet connection or switch Data Source above and click Retry.</span>
-      </div>
-      <div style="display: flex; gap: 8px;">
-        <button id="testConnBtn" type="button" class="btn btn-primary" style="padding: 6px 12px;">Retry Live Scan</button>
-      </div>
-    </div>
-
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>NSE Status &amp; Sync</span>
-          <span id="kpiTfTag" class="mono text-cyan">15M</span>
-        </div>
-        <div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div>
-        <div id="kpiFeedDetail" class="kpi-sub">Connecting to TradingView NSE...</div>
-      </div>
-
-      <div id="kpiLongCard" class="kpi-card clickable">
-        <div class="kpi-top">
-          <span>Long Signals (&lt; <span class="long-th-txt">35</span>)</span>
-          <span class="text-green">View →</span>
-        </div>
-        <div class="kpi-val mono">
-          <span id="kpiLongCount" class="text-green">0</span>
-          <span class="text-dim" style="font-size: 12px;">/ 50</span>
-        </div>
-        <div class="kpi-sub">Oversold dip setups</div>
-      </div>
-
-      <div id="kpiShortCard" class="kpi-card clickable">
-        <div class="kpi-top">
-          <span>Short Signals (&gt; <span class="short-th-txt">70</span>)</span>
-          <span class="text-red">View →</span>
-        </div>
-        <div class="kpi-val mono">
-          <span id="kpiShortCount" class="text-red">0</span>
-          <span class="text-dim" style="font-size: 12px;">/ 50</span>
-        </div>
-        <div class="kpi-sub">Overbought reversal setups</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>Most Oversold</span>
-          <span class="text-green mono">Lowest RSI</span>
-        </div>
-        <div class="kpi-val">
-          <span id="kpiOversoldSym" style="font-size: 16px;">--</span>
-          <span id="kpiOversoldRsi" class="mono text-green">--</span>
-        </div>
-        <div id="kpiOversoldPrice" class="kpi-sub mono">LTP: --</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>Most Overbought</span>
-          <span class="text-red mono">Highest RSI</span>
-        </div>
-        <div class="kpi-val">
-          <span id="kpiOverboughtSym" style="font-size: 16px;">--</span>
-          <span id="kpiOverboughtRsi" class="mono text-red">--</span>
-        </div>
-        <div id="kpiOverboughtPrice" class="kpi-sub mono">LTP: --</div>
-      </div>
-    </section>
-
-    <div class="tabs-row">
-      <div class="tabs-list">
-        <button type="button" data-tab="screener" class="tab-btn active">Nifty 50 Screener</button>
-        <button type="button" data-tab="signals" class="tab-btn">
-          <span>Active Signals (LONG &amp; SHORT)</span>
-          <span id="tabSignalsBadge" class="tab-badge mono">0</span>
-        </button>
-        <button type="button" data-tab="tradelog" class="tab-btn">
-          <span>Equity Trade Log</span>
-          <span id="tabTradesBadge" class="tab-badge mono">0</span>
-        </button>
-      </div>
-
-      <div class="filter-row">
-        <input id="searchInput" type="text" placeholder="Search symbol / company..." style="width: 185px;" />
-        <select id="sectorFilter">
-          <option value="ALL">All Sectors</option>
-        </select>
-        <select id="signalFilter">
-          <option value="ALL">All Signals</option>
-          <option value="LONG">LONG Only</option>
-          <option value="SHORT">SHORT Only</option>
-          <option value="WAIT">WAIT Only</option>
-        </select>
-      </div>
-    </div>
-
-    <section id="tab-screener" class="tab-panel">
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="sortable" data-sort="sr"># <span class="sort-ind"></span></th>
-                <th class="sortable" data-sort="symbol">Stock / Company <span class="sort-ind"></span></th>
-                <th class="sortable" data-sort="sector">Sector <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="price">Live LTP (₹) <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="prevClose">Prev Close <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="changePct">Day Chg % <span class="sort-ind"></span></th>
-                <th class="sortable" data-sort="rsi">14-Period RSI <span class="sort-ind"></span></th>
-                <th class="sortable text-center" data-sort="signal">Signal <span class="sort-ind"></span></th>
-                <th class="sortable text-center" data-sort="rsiRank">RSI Rank <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="target">Target +6.28% (2π) <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="nextAvg">Next Avg -3.14% (π) <span class="sort-ind"></span></th>
-                <th class="text-center">Quick Trade</th>
-              </tr>
-            </thead>
-            <tbody id="screenerTbody">
-              <tr><td colspan="12" class="empty-state">Fetching live Nifty 50 prices &amp; RSI...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-signals" class="tab-panel hidden">
-      <div class="signals-grid">
-        <div class="card">
-          <div class="signal-header long-hd">
-            <div>
-              <strong class="text-green">LONG Signals (RSI &lt; <span class="long-th-txt">35</span>)</strong>
-              <div class="text-muted" style="font-size: 11px;">Sorted lowest RSI first • +6.28% TP / -3.14% Avg</div>
-            </div>
-            <span id="longSigCount" class="badge badge-long mono">0</span>
-          </div>
-          <div id="longSigEmpty" class="empty-state hidden">No Nifty 50 stocks currently below Long RSI threshold.</div>
-          <div id="longSigWrap" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Stock</th>
-                  <th class="text-right">RSI</th>
-                  <th class="text-right">LTP (₹)</th>
-                  <th class="text-right">TP (+6.28%)</th>
-                  <th class="text-right">Avg (-3.14%)</th>
-                  <th class="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="longSigTbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="signal-header short-hd">
-            <div>
-              <strong class="text-red">SHORT Signals (RSI &gt; <span class="short-th-txt">70</span>)</strong>
-              <div class="text-muted" style="font-size: 11px;">Sorted highest RSI first • -6.28% TP / +3.14% Avg</div>
-            </div>
-            <span id="shortSigCount" class="badge badge-short mono">0</span>
-          </div>
-          <div id="shortSigEmpty" class="empty-state hidden">No Nifty 50 stocks currently above Short RSI threshold.</div>
-          <div id="shortSigWrap" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Stock</th>
-                  <th class="text-right">RSI</th>
-                  <th class="text-right">LTP (₹)</th>
-                  <th class="text-right">TP (-6.28%)</th>
-                  <th class="text-right">Avg (+3.14%)</th>
-                  <th class="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="shortSigTbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-tradelog" class="tab-panel hidden">
-      <div class="summary-grid">
-        <div class="kpi-card">
-          <div class="kpi-top"><span>Total Capital Deployed</span></div>
-          <div id="sumCapital" class="kpi-val mono">₹0.00</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top"><span>Unrealized P&amp;L</span></div>
-          <div id="sumPnl" class="kpi-val mono">₹0.00</div>
-        </div>
-        <div class="kpi-card" style="flex-direction: row; align-items: center; justify-content: space-between;">
-          <div>
-            <div class="kpi-top"><span>Overall Return %</span></div>
-            <div id="sumRoe" class="kpi-val mono">0.00%</div>
-          </div>
-          <button id="exportCsvBtn" type="button" class="btn btn-long" style="padding: 7px 12px; font-size: 12px;">⬇ Export CSV</button>
-        </div>
-      </div>
-
-      <form id="tradeForm" class="card form-card">
-        <div class="form-header">
-          <strong>Add NSE Equity / Intraday Trade</strong>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span id="posSizePreview" class="mono text-muted" style="font-size: 12px;">Value: ₹0.00</span>
-            <button id="autoFillBtn" type="button" class="btn" style="padding: 4px 9px; font-size: 11px;">Fill Live LTP</button>
-          </div>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="fSym">Stock</label>
-            <select id="fSym" required></select>
-          </div>
-          <div class="field">
-            <label for="fSide">Side</label>
-            <select id="fSide" required>
-              <option value="LONG">LONG</option>
-              <option value="SHORT">SHORT</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="fEntry">Entry Price (₹)</label>
-            <input id="fEntry" type="number" step="any" min="0" required placeholder="0.00" class="mono" />
-          </div>
-          <div class="field">
-            <label for="fQty">Quantity (Shares)</label>
-            <input id="fQty" type="number" step="1" min="1" required value="10" class="mono" />
-          </div>
-          <div class="field">
-            <label for="fRsi">Entry RSI</label>
-            <input id="fRsi" type="number" step="0.01" min="0" max="100" placeholder="32.50" class="mono" />
-          </div>
-          <div class="field">
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px;">+ Add Trade</button>
-          </div>
-        </div>
-      </form>
-
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Stock</th>
-                <th class="text-center">Side</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Entry (₹)</th>
-                <th class="text-right">Invested</th>
-                <th class="text-right">Live LTP</th>
-                <th class="text-right">Unrealized P&amp;L</th>
-                <th class="text-right">Return %</th>
-                <th class="text-right">TP (±6.28%)</th>
-                <th class="text-right">Avg (±3.14%)</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Del</th>
-              </tr>
-            </thead>
-            <tbody id="tradeLogTbody"></tbody>
-          </table>
-        </div>
-        <div id="tradeLogEmpty" class="empty-state hidden">No equity trades logged yet. Click <strong>+ Long</strong> or <strong>+ Short</strong> on any stock in the Screener.</div>
-      </div>
-    </section>
-  </main>
-
-  <div id="toastWrap" class="toast-wrap"></div>
-
-  <script>
-    (() => {
-      'use strict';
-
-      const STOCKS = [
-        { sr: 1,  symbol: 'RELIANCE',   tv: 'RELIANCE',   name: 'Reliance Industries',    sector: 'Energy' },
-        { sr: 2,  symbol: 'HDFCBANK',   tv: 'HDFCBANK',   name: 'HDFC Bank',              sector: 'Banking' },
-        { sr: 3,  symbol: 'TCS',        tv: 'TCS',        name: 'Tata Consultancy Svcs',  sector: 'IT' },
-        { sr: 4,  symbol: 'BHARTIARTL', tv: 'BHARTIARTL', name: 'Bharti Airtel',          sector: 'Telecom' },
-        { sr: 5,  symbol: 'ICICIBANK',  tv: 'ICICIBANK',  name: 'ICICI Bank',             sector: 'Banking' },
-        { sr: 6,  symbol: 'SBIN',       tv: 'SBIN',       name: 'State Bank of India',    sector: 'Banking' },
-        { sr: 7,  symbol: 'INFY',       tv: 'INFY',       name: 'Infosys',                sector: 'IT' },
-        { sr: 8,  symbol: 'BAJFINANCE', tv: 'BAJFINANCE', name: 'Bajaj Finance',          sector: 'Finance' },
-        { sr: 9,  symbol: 'HINDUNILVR', tv: 'HINDUNILVR', name: 'Hindustan Unilever',     sector: 'FMCG' },
-        { sr: 10, symbol: 'ITC',        tv: 'ITC',        name: 'ITC Ltd',                sector: 'FMCG' },
-        { sr: 11, symbol: 'LT',         tv: 'LT',         name: 'Larsen & Toubro',        sector: 'Infra' },
-        { sr: 12, symbol: 'HCLTECH',    tv: 'HCLTECH',    name: 'HCL Technologies',       sector: 'IT' },
-        { sr: 13, symbol: 'KOTAKBANK',  tv: 'KOTAKBANK',  name: 'Kotak Mahindra Bank',    sector: 'Banking' },
-        { sr: 14, symbol: 'SUNPHARMA',  tv: 'SUNPHARMA',  name: 'Sun Pharma',             sector: 'Pharma' },
-        { sr: 15, symbol: 'MARUTI',     tv: 'MARUTI',     name: 'Maruti Suzuki',          sector: 'Auto' },
-        { sr: 16, symbol: 'M&M',        tv: 'M_M',        name: 'Mahindra & Mahindra',    sector: 'Auto' },
-        { sr: 17, symbol: 'AXISBANK',   tv: 'AXISBANK',   name: 'Axis Bank',              sector: 'Banking' },
-        { sr: 18, symbol: 'ULTRACEMCO', tv: 'ULTRACEMCO', name: 'UltraTech Cement',       sector: 'Materials' },
-        { sr: 19, symbol: 'NTPC',       tv: 'NTPC',       name: 'NTPC Ltd',               sector: 'Energy' },
-        { sr: 20, symbol: 'BAJAJFINSV', tv: 'BAJAJFINSV', name: 'Bajaj Finserv',          sector: 'Finance' },
-        { sr: 21, symbol: 'TITAN',      tv: 'TITAN',      name: 'Titan Company',          sector: 'Consumer' },
-        { sr: 22, symbol: 'ADANIPORTS', tv: 'ADANIPORTS', name: 'Adani Ports & SEZ',      sector: 'Infra' },
-        { sr: 23, symbol: 'ONGC',       tv: 'ONGC',       name: 'ONGC',                   sector: 'Energy' },
-        { sr: 24, symbol: 'BEL',        tv: 'BEL',        name: 'Bharat Electronics',     sector: 'Defence' },
-        { sr: 25, symbol: 'ADANIENT',   tv: 'ADANIENT',   name: 'Adani Enterprises',      sector: 'Metals' },
-        { sr: 26, symbol: 'POWERGRID',  tv: 'POWERGRID',  name: 'Power Grid Corp',        sector: 'Energy' },
-        { sr: 27, symbol: 'WIPRO',      tv: 'WIPRO',      name: 'Wipro',                  sector: 'IT' },
-        { sr: 28, symbol: 'JSWSTEEL',   tv: 'JSWSTEEL',   name: 'JSW Steel',              sector: 'Metals' },
-        { sr: 29, symbol: 'TATAMOTORS', tv: 'TATAMOTORS', name: 'Tata Motors',            sector: 'Auto' },
-        { sr: 30, symbol: 'COALINDIA',  tv: 'COALINDIA',  name: 'Coal India',             sector: 'Energy' },
-        { sr: 31, symbol: 'ASIANPAINT', tv: 'ASIANPAINT', name: 'Asian Paints',           sector: 'Consumer' },
-        { sr: 32, symbol: 'BAJAJ-AUTO', tv: 'BAJAJ_AUTO', name: 'Bajaj Auto',             sector: 'Auto' },
-        { sr: 33, symbol: 'NESTLEIND',  tv: 'NESTLEIND',  name: 'Nestle India',           sector: 'FMCG' },
-        { sr: 34, symbol: 'TRENT',      tv: 'TRENT',      name: 'Trent Ltd',              sector: 'Consumer' },
-        { sr: 35, symbol: 'GRASIM',     tv: 'GRASIM',     name: 'Grasim Industries',      sector: 'Materials' },
-        { sr: 36, symbol: 'EICHERMOT',  tv: 'EICHERMOT',  name: 'Eicher Motors',          sector: 'Auto' },
-        { sr: 37, symbol: 'SBILIFE',    tv: 'SBILIFE',    name: 'SBI Life Insurance',     sector: 'Finance' },
-        { sr: 38, symbol: 'TECHM',      tv: 'TECHM',      name: 'Tech Mahindra',          sector: 'IT' },
-        { sr: 39, symbol: 'HINDALCO',   tv: 'HINDALCO',   name: 'Hindalco Industries',    sector: 'Metals' },
-        { sr: 40, symbol: 'TATASTEEL',  tv: 'TATASTEEL',  name: 'Tata Steel',             sector: 'Metals' },
-        { sr: 41, symbol: 'HDFCLIFE',   tv: 'HDFCLIFE',   name: 'HDFC Life Insurance',    sector: 'Finance' },
-        { sr: 42, symbol: 'SHRIRAMFIN', tv: 'SHRIRAMFIN', name: 'Shriram Finance',        sector: 'Finance' },
-        { sr: 43, symbol: 'CIPLA',      tv: 'CIPLA',      name: 'Cipla',                  sector: 'Pharma' },
-        { sr: 44, symbol: 'APOLLOHOSP', tv: 'APOLLOHOSP', name: 'Apollo Hospitals',       sector: 'Pharma' },
-        { sr: 45, symbol: 'DRREDDY',    tv: 'DRREDDY',    name: "Dr. Reddy's Labs",       sector: 'Pharma' },
-        { sr: 46, symbol: 'TATACONSUM', tv: 'TATACONSUM', name: 'Tata Consumer Products', sector: 'FMCG' },
-        { sr: 47, symbol: 'HEROMOTOCO', tv: 'HEROMOTOCO', name: 'Hero MotoCorp',          sector: 'Auto' },
-        { sr: 48, symbol: 'INDUSINDBK', tv: 'INDUSINDBK', name: 'IndusInd Bank',          sector: 'Banking' },
-        { sr: 49, symbol: 'JIOFIN',     tv: 'JIOFIN',     name: 'Jio Financial Services', sector: 'Finance' },
-        { sr: 50, symbol: 'BRITANNIA',  tv: 'BRITANNIA',  name: 'Britannia Industries',   sector: 'FMCG' }
-      ];
-
-      const TV_TO_SYM = new Map(STOCKS.map(s => [`NSE:${s.tv}`, s.symbol]));
-
-      const TIMEFRAMES = [
-        { key: '5m',  label: '5m',  tvCol: 'RSI|5',   yahoo: { interval: '5m',  range: '5d'  } },
-        { key: '15m', label: '15m', tvCol: 'RSI|15',  yahoo: { interval: '15m', range: '5d'  } },
-        { key: '30m', label: '30m', tvCol: 'RSI|30',  yahoo: { interval: '30m', range: '10d' } },
-        { key: '1h',  label: '1h',  tvCol: 'RSI|60',  yahoo: { interval: '60m', range: '1mo' } },
-        { key: '2h',  label: '2h',  tvCol: 'RSI|120', yahoo: { interval: '60m', range: '2mo' } },
-        { key: '4h',  label: '4h',  tvCol: 'RSI|240', yahoo: { interval: '60m', range: '3mo' } },
-        { key: '1d',  label: '1D',  tvCol: 'RSI',     yahoo: { interval: '1d',  range: '6mo' } },
-        { key: '1w',  label: '1W',  tvCol: 'RSI|1W',  yahoo: { interval: '1wk', range: '2y'  } },
-        { key: '1mo', label: '1M',  tvCol: 'RSI|1M',  yahoo: { interval: '1mo', range: '5y'  } },
-        { key: '1y',  label: '1Y',  tvCol: null,      yahoo: { interval: '1mo', range: '10y' } }
-      ];
-
-      const TF_MAP = new Map(TIMEFRAMES.map(t => [t.key, t]));
-
-      function createEmptyRsiMap() {
-        return {
-          '5m': null, '15m': null, '30m': null, '1h': null, '2h': null,
-          '4h': null, '1d': null, '1w': null, '1mo': null, '1y': null
-        };
-      }
-
-      const RSI_PERIOD = 14;
-      const STORAGE_TRADES = 'nifty50_rsi_v4_trades';
-      const STORAGE_PREFS  = 'nifty50_rsi_v4_prefs';
-
-      const state = {
-        sourceMode: 'auto',
-        activeSource: 'tv_direct',
-        timeframe: '15m',
-        pollIntervalMs: 10000,
-        longTh: 35,
-        shortTh: 70,
-        soundEnabled: false,
-        tgEnabled: true,
-        tgConfiguredOnRender: false,
-        activeTab: 'screener',
-        sortKey: 'rsi',
-        sortDir: 'asc',
-        searchQuery: '',
-        sectorFilter: 'ALL',
-        signalFilter: 'ALL',
-        scans: 0,
-        lastUpdateDate: null,
-        sessionId: 0,
-        isScanning: false,
-        pollTimer: null,
-        audioCtx: null,
-        cooldowns: new Map(),
-        stocks: new Map(),
-        trades: []
-      };
-
-      STOCKS.forEach(s => {
-        state.stocks.set(s.symbol, {
-          sr: s.sr,
-          symbol: s.symbol,
-          tv: s.tv,
-          name: s.name,
-          sector: s.sector,
-          price: null,
-          prevClose: null,
-          changePct: null,
-          rsiMap: createEmptyRsiMap(),
-          rsi: null,
-          rsiRank: null,
-          flash: null,
-          loaded: false
-        });
-      });
-
-      function computeWilderRSI(closes, period = RSI_PERIOD) {
-        if (!closes || closes.length <= period) return null;
-        let gains = 0, losses = 0;
-        for (let i = 1; i <= period; i++) {
-          const d = closes[i] - closes[i - 1];
-          if (d >= 0) gains += d;
-          else losses -= d;
-        }
-        let avgGain = gains / period;
-        let avgLoss = losses / period;
-        for (let i = period + 1; i < closes.length; i++) {
-          const d = closes[i] - closes[i - 1];
-          avgGain = (avgGain * (period - 1) + (d > 0 ? d : 0)) / period;
-          avgLoss = (avgLoss * (period - 1) + (d < 0 ? -d : 0)) / period;
-        }
-        if (avgLoss === 0) return 100;
-        const rs = avgGain / avgLoss;
-        return Math.round((100 - 100 / (1 + rs)) * 100) / 100;
-      }
-
-      function tfDisplayLabel(tfKey) {
-        return (TF_MAP.get(tfKey)?.label || tfKey).toUpperCase();
-      }
-
-      function fmtINR(v) {
-        if (v === null || v === undefined || isNaN(v)) return '--';
-        return (v < 0 ? '-₹' : '₹') + Math.abs(v).toLocaleString('en-IN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
-      }
-
-      function fmtPrice(v) {
-        if (v === null || v === undefined || isNaN(v)) return '--';
-        return v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-
-      function fmtPct(v) {
-        if (v === null || v === undefined || isNaN(v)) return '--';
-        return (v > 0 ? '+' : '') + v.toFixed(2) + '%';
-      }
-
-      function fmtIST(dateObj) {
-        if (!dateObj) return '--:--:-- IST';
-        try {
-          return new Intl.DateTimeFormat('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-          }).format(dateObj) + ' IST';
-        } catch {
-          return dateObj.toTimeString().slice(0, 8) + ' IST';
-        }
-      }
-
-      function isNSEMarketOpen() {
-        try {
-          const now = new Date();
-          const parts = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Asia/Kolkata',
-            weekday: 'short',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          }).formatToParts(now);
-          const day = parts.find(p => p.type === 'weekday')?.value;
-          const hr = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
-          const min = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
-          if (day === 'Sat' || day === 'Sun') return false;
-          const totalMin = hr * 60 + min;
-          return totalMin >= 555 && totalMin <= 930;
-        } catch {
-          return true;
-        }
-      }
-
-      function getSignal(rsi) {
-        if (rsi === null || isNaN(rsi)) return { label: 'LOAD', cls: 'badge-neutral', bar: '#475569' };
-        if (rsi < state.longTh) return { label: 'LONG', cls: 'badge-long', bar: '#10b981' };
-        if (rsi > state.shortTh) return { label: 'SHORT', cls: 'badge-short', bar: '#f43f5e' };
-        return { label: 'WAIT', cls: 'badge-wait', bar: '#06b6d4' };
-      }
-
-      function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), timeoutMs);
-        return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(t));
-      }
-
-      function sourceLabel(src) {
-        if (src === 'tv_direct') return 'TradingView NSE Direct';
-        if (src === 'yahoo_allorigins') return 'Yahoo (AllOrigins)';
-        if (src === 'yahoo_codetabs') return 'Yahoo (CodeTabs)';
-        return 'NSE Feed';
-      }
-
-      function setLiveHeaderStatus(mode, text) {
-        const dot = document.getElementById('liveDot');
-        const nameEl = document.getElementById('liveFeedName');
-        const detailEl = document.getElementById('kpiFeedDetail');
-
-        nameEl.textContent = text;
-        if (mode === 'live') {
-          dot.className = 'status-dot live pulse-dot';
-          document.getElementById('networkErrorBanner').classList.add('hidden');
-          const mkt = isNSEMarketOpen() ? 'NSE Market OPEN' : 'NSE Market CLOSED (Last Close)';
-          detailEl.textContent = `${mkt} • ${sourceLabel(state.activeSource)}`;
-        } else if (mode === 'error') {
-          dot.className = 'status-dot error';
-          detailEl.textContent = 'Connection failed — switch source or retry';
-        } else {
-          dot.className = 'status-dot pulse-dot';
-          detailEl.textContent = text;
-        }
-      }
-
-      function playChime(isShort = false) {
-        if (!state.soundEnabled) return;
-        try {
-          if (!state.audioCtx) {
-            const Ctx = window.AudioContext || window.webkitAudioContext;
-            state.audioCtx = new Ctx();
-          }
-          if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
-          const ctx = state.audioCtx;
-          const now = ctx.currentTime;
-          const freqs = isShort ? [784, 523.25] : [587.33, 880];
-          freqs.forEach((f, i) => {
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(f, now + i * 0.11);
-            g.gain.setValueAtTime(0.001, now + i * 0.11);
-            g.gain.exponentialRampToValueAtTime(0.08, now + i * 0.11 + 0.02);
-            g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.11 + 0.3);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(now + i * 0.11);
-            osc.stop(now + i * 0.11 + 0.32);
-          });
-        } catch {}
-      }
-
-      function showToast(msg, type = 'info') {
-        const wrap = document.getElementById('toastWrap');
-        const el = document.createElement('div');
-        el.className = `toast ${type}`;
-        el.textContent = msg;
-        wrap.appendChild(el);
-        setTimeout(() => el.remove(), 3500);
-      }
-
-      // Send Nifty 50 signal via Render backend (/api/nifty-alert) using Render's TG_BOT_TOKEN & TG_CHAT_ID
-      async function triggerRenderTelegramSignal(s, side) {
-        if (!state.tgEnabled) return;
-        try {
-          const res = await fetch('/api/nifty-alert', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              symbol: s.symbol,
-              name: s.name,
-              sector: s.sector,
-              side,
-              timeframe: tfDisplayLabel(state.timeframe),
-              price: s.price,
-              changePct: s.changePct,
-              rsi: s.rsi
-            })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!data.ok && data.error && !data.cooldown) {
-            showToast(`Telegram Error: ${data.error}`, 'error');
-          }
-        } catch {}
-      }
-
-      function checkRsiAlerts(s, oldRsi, isInitialScan) {
-        if (isInitialScan || s.rsi === null || oldRsi === null) return;
-        const now = Date.now();
-        if (oldRsi >= state.longTh && s.rsi < state.longTh) {
-          const k = s.symbol + '_L';
-          if (now - (state.cooldowns.get(k) || 0) > 60000) {
-            state.cooldowns.set(k, now);
-            playChime(false);
-            showToast(`LONG Signal: ${s.symbol} RSI dipped to ${s.rsi.toFixed(2)}`, 'long');
-          }
-          triggerRenderTelegramSignal(s, 'LONG');
-        } else if (oldRsi <= state.shortTh && s.rsi > state.shortTh) {
-          const k = s.symbol + '_S';
-          if (now - (state.cooldowns.get(k) || 0) > 60000) {
-            state.cooldowns.set(k, now);
-            playChime(true);
-            showToast(`SHORT Signal: ${s.symbol} RSI surged to ${s.rsi.toFixed(2)}`, 'short');
-          }
-          triggerRenderTelegramSignal(s, 'SHORT');
-        }
-      }
-
-      async function checkRenderTelegramStatus() {
-        try {
-          const res = await fetch('/api/state', { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            state.tgConfiguredOnRender = Boolean(data.tg_configured);
-            updateTgButtonUI();
-          }
-        } catch {}
-      }
-
-      // =========================================================================
-      // DATA SOURCE 1: TRADINGVIEW INDIA SCANNER (Browser-side direct call)
-      // =========================================================================
-      async function fetchTradingViewDirect(sid, isInitial) {
-        const tvCols = TIMEFRAMES.filter(t => t.tvCol).map(t => t.tvCol);
-        const payload = JSON.stringify({
-          symbols: {
-            tickers: STOCKS.map(s => `NSE:${s.tv}`),
-            query: { types: [] }
-          },
-          columns: [
-            'name',
-            'close',
-            'change',
-            'change_abs',
-            ...tvCols
-          ]
-        });
-
-        const res = await fetchWithTimeout('https://scanner.tradingview.com/india/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-          body: payload
-        }, 9000);
-
-        if (!res.ok) throw new Error(`TradingView HTTP ${res.status}`);
-        const json = await res.json();
-        if (sid !== state.sessionId) return 0;
-        if (!json || !Array.isArray(json.data) || json.data.length === 0) {
-          throw new Error('TradingView returned empty data');
-        }
-
-        let updated = 0;
-        json.data.forEach(row => {
-          const sym = TV_TO_SYM.get(row.s);
-          if (!sym) return;
-          const s = state.stocks.get(sym);
-          const d = row.d;
-          if (!s || !Array.isArray(d)) return;
-
-          const livePrice = typeof d[1] === 'number' ? d[1] : null;
-          const changePct = typeof d[2] === 'number' ? d[2] : null;
-          const changeAbs = typeof d[3] === 'number' ? d[3] : null;
-          const prevClose = (livePrice !== null && changeAbs !== null) ? (livePrice - changeAbs) : null;
-
-          if (livePrice !== null && s.price !== null && livePrice !== s.price) {
-            s.flash = livePrice > s.price ? 'up' : 'down';
-          }
-
-          const oldRsi = s.rsi;
-          s.price = livePrice;
-          s.prevClose = prevClose;
-          s.changePct = changePct;
-
-          const nextMap = createEmptyRsiMap();
-          TIMEFRAMES.forEach((tf, idx) => {
-            if (!tf.tvCol) return;
-            const rawVal = d[4 + idx];
-            nextMap[tf.key] = typeof rawVal === 'number' ? Math.round(rawVal * 100) / 100 : null;
-          });
-          s.rsiMap = nextMap;
-          s.rsi = s.rsiMap[state.timeframe];
-          s.loaded = livePrice !== null;
-
-          checkRsiAlerts(s, oldRsi, isInitial);
-          if (s.loaded) updated++;
-        });
-
-        if (updated === 0) throw new Error('No Nifty 50 rows parsed');
-        return updated;
-      }
-
-      // =========================================================================
-      // BACKUP SOURCE 2 & 3: YAHOO FINANCE
-      // =========================================================================
-      async function fetchYahooSingle(symbol, tfKey, proxyType) {
-        const tfCfg = TF_MAP.get(tfKey)?.yahoo || TF_MAP.get('15m').yahoo;
-        const target = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol + '.NS')}?interval=${tfCfg.interval}&range=${tfCfg.range}`;
-        let json;
-
-        if (proxyType === 'yahoo_allorigins') {
-          const url = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
-          const res = await fetchWithTimeout(url, {}, 9000);
-          if (!res.ok) throw new Error(`AllOrigins HTTP ${res.status}`);
-          const wrap = await res.json();
-          json = JSON.parse(wrap.contents);
-        } else {
-          const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
-          const res = await fetchWithTimeout(url, {}, 9000);
-          if (!res.ok) throw new Error(`CodeTabs HTTP ${res.status}`);
-          json = await res.json();
-        }
-
-        const result = json?.chart?.result?.[0];
-        if (!result) throw new Error('Empty chart');
-        const rawCloses = result.indicators?.quote?.[0]?.close || [];
-        let closes = rawCloses.filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
-        if (tfKey === '1y' && closes.length > RSI_PERIOD + 12) {
-          closes = closes.slice(-(RSI_PERIOD + 12));
-        }
-        if (closes.length <= RSI_PERIOD) throw new Error('Few candles');
-
-        const meta = result.meta || {};
-        const livePrice = (typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0)
-          ? meta.regularMarketPrice : closes[closes.length - 1];
-        const prevClose = (typeof meta.chartPreviousClose === 'number' && meta.chartPreviousClose > 0)
-          ? meta.chartPreviousClose : closes[closes.length - 2];
-
-        const liveCloses = closes.slice();
-        liveCloses[liveCloses.length - 1] = livePrice;
-        const rsi = computeWilderRSI(liveCloses, RSI_PERIOD);
-        return { livePrice, prevClose, rsi };
-      }
-
-      async function fetchYahooBatch(sid, proxyType, isInitial, targetTfKey = state.timeframe) {
-        const prog = document.getElementById('loadProgressBar');
-        const batchSize = 4;
-        let done = 0;
-        let success = 0;
-
-        const first = await fetchYahooSingle(STOCKS[0].symbol, targetTfKey, proxyType);
-        if (sid !== state.sessionId) return 0;
-
-        const applyOne = (sym, data) => {
-          const s = state.stocks.get(sym);
-          if (!s || !data) return;
-          if (s.price !== null && data.livePrice !== s.price) {
-            s.flash = data.livePrice > s.price ? 'up' : 'down';
-          }
-          const oldRsi = s.rsi;
-          if (data.livePrice !== null) s.price = data.livePrice;
-          if (data.prevClose !== null) {
-            s.prevClose = data.prevClose;
-            s.changePct = data.prevClose ? ((s.price - data.prevClose) / data.prevClose) * 100 : 0;
-          }
-          s.rsiMap[targetTfKey] = data.rsi;
-          if (targetTfKey === state.timeframe) {
-            s.rsi = data.rsi;
-            s.loaded = s.price !== null;
-            checkRsiAlerts(s, oldRsi, isInitial);
-          }
-        };
-
-        applyOne(STOCKS[0].symbol, first);
-        done = 1; success = 1;
-        prog.style.width = '2%';
-        renderAll();
-
-        for (let i = 1; i < STOCKS.length; i += batchSize) {
-          if (sid !== state.sessionId) return 0;
-          const batch = STOCKS.slice(i, i + batchSize);
-          await Promise.all(batch.map(async item => {
-            try {
-              const data = await fetchYahooSingle(item.symbol, targetTfKey, proxyType);
-              if (sid === state.sessionId) {
-                applyOne(item.symbol, data);
-                success++;
-              }
-            } catch {}
-            finally { done++; }
-          }));
-          if (sid !== state.sessionId) return 0;
-          state.lastUpdateDate = new Date();
-          prog.style.width = `${Math.round((done / STOCKS.length) * 100)}%`;
-          renderAll();
-          await new Promise(r => setTimeout(r, 200));
-        }
-
-        if (success === 0) throw new Error('Yahoo returned 0 stocks');
-        return success;
-      }
-
-      async function fetchOneYearOverlay(sid, isInitial) {
-        const proxies = state.sourceMode === 'auto'
-          ? ['yahoo_allorigins', 'yahoo_codetabs']
-          : [state.sourceMode];
-
-        for (const p of proxies) {
-          try {
-            await fetchYahooBatch(sid, p, isInitial, '1y');
-            return true;
-          } catch {}
-        }
-        return false;
-      }
-
-      async function runScan(isInitial = false) {
-        if (state.isScanning && !isInitial) return;
-        const sid = isInitial ? ++state.sessionId : state.sessionId;
-        state.isScanning = true;
-
-        const spin = document.getElementById('refreshSpin');
-        const prog = document.getElementById('loadProgressBar');
-        spin.classList.add('spinning');
-        prog.style.width = '25%';
-
-        const order = state.sourceMode === 'auto'
-          ? ['tv_direct', 'yahoo_allorigins', 'yahoo_codetabs']
-          : [state.sourceMode];
-
-        let succeeded = false;
-        let lastErr = '';
-
-        for (const src of order) {
-          if (sid !== state.sessionId) return;
-          if (isInitial) setLiveHeaderStatus('connecting', `Connecting: ${sourceLabel(src)}...`);
-          try {
-            if (src === 'tv_direct') {
-              await fetchTradingViewDirect(sid, isInitial);
-              if (state.timeframe === '1y') {
-                await fetchOneYearOverlay(sid, isInitial);
-              }
-            } else {
-              await fetchYahooBatch(sid, src, isInitial, state.timeframe);
-            }
-            state.activeSource = src;
-            succeeded = true;
-            break;
-          } catch (err) {
-            lastErr = err.message || 'Network error';
-          }
-        }
-
-        spin.classList.remove('spinning');
-        state.isScanning = false;
-        if (sid !== state.sessionId) return;
-
-        if (succeeded) {
-          state.scans += 1;
-          state.lastUpdateDate = new Date();
-          prog.style.width = '100%';
-          setTimeout(() => { prog.style.width = '0%'; }, 350);
-          setLiveHeaderStatus('live', `LIVE • ${state.activeSource === 'tv_direct' ? 'TV NSE' : 'Yahoo NSE'} ${tfDisplayLabel(state.timeframe)}`);
-          renderAll();
-        } else {
-          prog.style.width = '0%';
-          setLiveHeaderStatus('error', 'OFFLINE • Blocked');
-          document.getElementById('networkErrorDetail').textContent = ` (${lastErr}). Please check your internet connection or try switching Data Source.`;
-          document.getElementById('networkErrorBanner').classList.remove('hidden');
-          if (state.scans === 0) {
-            document.getElementById('screenerTbody').innerHTML =
-              '<tr><td colspan="12" class="empty-state text-red">Unable to load Nifty 50 data. Click <strong>Retry Live Scan</strong> or switch Data Source.</td></tr>';
-          }
-        }
-      }
-
-      function schedulePolling() {
-        if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-        if (state.pollIntervalMs > 0) {
-          state.pollTimer = setInterval(() => {
-            if (!state.isScanning) runScan(false);
-          }, state.pollIntervalMs);
-        }
-      }
-
-      function recomputeRanks() {
-        const loaded = Array.from(state.stocks.values())
-          .filter(s => s.loaded && s.rsi !== null)
-          .sort((a, b) => a.rsi - b.rsi);
-        loaded.forEach((s, i) => { s.rsiRank = i + 1; });
-      }
-
-      function renderKPIs() {
-        const loaded = Array.from(state.stocks.values()).filter(s => s.loaded && s.rsi !== null);
-        const longs  = loaded.filter(s => s.rsi < state.longTh);
-        const shorts = loaded.filter(s => s.rsi > state.shortTh);
-
-        document.getElementById('liveLoadedCount').textContent = `${loaded.length}/50`;
-        document.getElementById('liveScanCount').textContent = state.scans.toLocaleString();
-        const ist = fmtIST(state.lastUpdateDate);
-        document.getElementById('liveTimestamp').textContent = ist;
-        document.getElementById('kpiSyncTime').textContent = ist;
-        document.getElementById('kpiTfTag').textContent = tfDisplayLabel(state.timeframe);
-
-        document.getElementById('kpiLongCount').textContent = longs.length;
-        document.getElementById('kpiShortCount').textContent = shorts.length;
-        document.getElementById('tabSignalsBadge').textContent = longs.length + shorts.length;
-        document.getElementById('tabTradesBadge').textContent = state.trades.length;
-
-        if (loaded.length > 0) {
-          const sorted = loaded.slice().sort((a, b) => a.rsi - b.rsi);
-          const low = sorted[0];
-          const high = sorted[sorted.length - 1];
-
-          document.getElementById('kpiOversoldSym').textContent = low.symbol;
-          document.getElementById('kpiOversoldRsi').textContent = low.rsi.toFixed(2);
-          document.getElementById('kpiOversoldPrice').textContent = `LTP: ₹${fmtPrice(low.price)}`;
-
-          document.getElementById('kpiOverboughtSym').textContent = high.symbol;
-          document.getElementById('kpiOverboughtRsi').textContent = high.rsi.toFixed(2);
-          document.getElementById('kpiOverboughtPrice').textContent = `LTP: ₹${fmtPrice(high.price)}`;
-        }
-      }
-
-      function rsiGaugeHtml(rsi, sig) {
-        if (rsi === null || isNaN(rsi)) return '<span class="mono text-dim">--</span>';
-        const w = Math.max(0, Math.min(100, rsi));
-        const clr = rsi < state.longTh ? 'text-green' : rsi > state.shortTh ? 'text-red' : '';
-        return `
-          <div class="rsi-cell">
-            <span class="mono ${clr}" style="font-weight:700; width:44px;">${rsi.toFixed(2)}</span>
-            <div class="rsi-bar-bg"><div class="rsi-bar-fill" style="width:${w}%; background:${sig.bar};"></div></div>
-          </div>
-        `;
-      }
-
-      function renderScreener() {
-        const tbody = document.getElementById('screenerTbody');
-        const q = state.searchQuery.trim().toLowerCase();
-        let list = Array.from(state.stocks.values());
-
-        if (q) {
-          list = list.filter(s =>
-            s.symbol.toLowerCase().includes(q) ||
-            s.name.toLowerCase().includes(q) ||
-            s.sector.toLowerCase().includes(q)
-          );
-        }
-        if (state.sectorFilter !== 'ALL') {
-          list = list.filter(s => s.sector === state.sectorFilter);
-        }
-        if (state.signalFilter !== 'ALL') {
-          list = list.filter(s => getSignal(s.rsi).label === state.signalFilter);
-        }
-
-        const dir = state.sortDir === 'asc' ? 1 : -1;
-        list.sort((a, b) => {
-          let va, vb;
-          switch (state.sortKey) {
-            case 'sr':        va = a.sr; vb = b.sr; break;
-            case 'symbol':    va = a.symbol; vb = b.symbol; break;
-            case 'sector':    va = a.sector; vb = b.sector; break;
-            case 'price':     va = a.price; vb = b.price; break;
-            case 'prevClose': va = a.prevClose; vb = b.prevClose; break;
-            case 'changePct': va = a.changePct; vb = b.changePct; break;
-            case 'rsi':       va = a.rsi; vb = b.rsi; break;
-            case 'rsiRank':   va = a.rsiRank; vb = b.rsiRank; break;
-            case 'target':    va = a.price ? a.price * 1.0628 : null; vb = b.price ? b.price * 1.0628 : null; break;
-            case 'nextAvg':   va = a.price ? a.price * 0.9686 : null; vb = b.price ? b.price * 0.9686 : null; break;
-            case 'signal':    va = getSignal(a.rsi).label; vb = getSignal(b.rsi).label; break;
-            default:          va = a.rsi; vb = b.rsi;
-          }
-          if (va === null || va === undefined) return 1;
-          if (vb === null || vb === undefined) return -1;
-          if (typeof va === 'string') return va.localeCompare(vb) * dir;
-          return (va - vb) * dir;
-        });
-
-        if (list.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No stocks match your current filter.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = list.map(s => {
-          const sig = getSignal(s.rsi);
-          const tp  = s.price !== null ? s.price * 1.0628 : null;
-          const avg = s.price !== null ? s.price * 0.9686 : null;
-          const chgCls = s.changePct > 0 ? 'text-green' : s.changePct < 0 ? 'text-red' : 'text-muted';
-          const flashCls = s.flash === 'up' ? 'tick-up' : s.flash === 'down' ? 'tick-down' : '';
-          const rowCls = sig.label === 'LONG' ? 'row-long' : sig.label === 'SHORT' ? 'row-short' : '';
-          s.flash = null;
-
-          return `
-            <tr class="${rowCls}">
-              <td class="mono text-dim">#${s.sr}</td>
-              <td>
-                <strong class="mono">${s.symbol}</strong>
-                <div class="text-muted" style="font-size:11px;">${s.name}</div>
-              </td>
-              <td><span class="sector-tag">${s.sector}</span></td>
-              <td class="text-right mono ${flashCls}" style="font-weight:700;">${fmtPrice(s.price)}</td>
-              <td class="text-right mono text-muted">${fmtPrice(s.prevClose)}</td>
-              <td class="text-right mono ${chgCls}" style="font-weight:600;">${fmtPct(s.changePct)}</td>
-              <td>${rsiGaugeHtml(s.rsi, sig)}</td>
-              <td class="text-center"><span class="badge ${sig.cls}">${sig.label}</span></td>
-              <td class="text-center mono ${s.rsiRank && s.rsiRank <= 5 ? 'text-green' : 'text-muted'}">${s.rsiRank ? '#' + s.rsiRank : '--'}</td>
-              <td class="text-right mono text-green">${fmtPrice(tp)}</td>
-              <td class="text-right mono text-amber">${fmtPrice(avg)}</td>
-              <td class="text-center">
-                <div class="action-btns">
-                  <button type="button" class="btn btn-long" data-quick-sym="${s.symbol}" data-quick-side="LONG">+ Long</button>
-                  <button type="button" class="btn btn-short" data-quick-sym="${s.symbol}" data-quick-side="SHORT">+ Short</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
-
-      function renderSignals() {
-        const loaded = Array.from(state.stocks.values()).filter(s => s.loaded && s.rsi !== null);
-        const longs  = loaded.filter(s => s.rsi < state.longTh).sort((a, b) => a.rsi - b.rsi);
-        const shorts = loaded.filter(s => s.rsi > state.shortTh).sort((a, b) => b.rsi - a.rsi);
-
-        document.getElementById('longSigCount').textContent = longs.length;
-        document.getElementById('shortSigCount').textContent = shorts.length;
-
-        const longEmpty = document.getElementById('longSigEmpty');
-        const longWrap  = document.getElementById('longSigWrap');
-        if (longs.length === 0) {
-          longEmpty.classList.remove('hidden');
-          longWrap.classList.add('hidden');
-        } else {
-          longEmpty.classList.add('hidden');
-          longWrap.classList.remove('hidden');
-          document.getElementById('longSigTbody').innerHTML = longs.map(s => `
-            <tr class="row-long">
-              <td><strong class="mono">${s.symbol}</strong><div class="text-muted" style="font-size:10px;">${s.sector}</div></td>
-              <td class="text-right mono text-green" style="font-weight:700;">${s.rsi.toFixed(2)}</td>
-              <td class="text-right mono">₹${fmtPrice(s.price)}</td>
-              <td class="text-right mono text-green">₹${fmtPrice(s.price * 1.0628)}</td>
-              <td class="text-right mono text-amber">₹${fmtPrice(s.price * 0.9686)}</td>
-              <td class="text-center"><button type="button" class="btn btn-long" data-quick-sym="${s.symbol}" data-quick-side="LONG">+ Long</button></td>
-            </tr>
-          `).join('');
-        }
-
-        const shortEmpty = document.getElementById('shortSigEmpty');
-        const shortWrap  = document.getElementById('shortSigWrap');
-        if (shorts.length === 0) {
-          shortEmpty.classList.remove('hidden');
-          shortWrap.classList.add('hidden');
-        } else {
-          shortEmpty.classList.add('hidden');
-          shortWrap.classList.remove('hidden');
-          document.getElementById('shortSigTbody').innerHTML = shorts.map(s => `
-            <tr class="row-short">
-              <td><strong class="mono">${s.symbol}</strong><div class="text-muted" style="font-size:10px;">${s.sector}</div></td>
-              <td class="text-right mono text-red" style="font-weight:700;">${s.rsi.toFixed(2)}</td>
-              <td class="text-right mono">₹${fmtPrice(s.price)}</td>
-              <td class="text-right mono text-green">₹${fmtPrice(s.price * 0.9372)}</td>
-              <td class="text-right mono text-amber">₹${fmtPrice(s.price * 1.0314)}</td>
-              <td class="text-center"><button type="button" class="btn btn-short" data-quick-sym="${s.symbol}" data-quick-side="SHORT">+ Short</button></td>
-            </tr>
-          `).join('');
-        }
-      }
-
-      function renderTradeLog() {
-        const tbody = document.getElementById('tradeLogTbody');
-        const emptyEl = document.getElementById('tradeLogEmpty');
-
-        let totalCap = 0;
-        let totalPnl = 0;
-
-        if (state.trades.length === 0) {
-          tbody.innerHTML = '';
-          emptyEl.classList.remove('hidden');
-        } else {
-          emptyEl.classList.add('hidden');
-          tbody.innerHTML = state.trades.map(t => {
-            const s = state.stocks.get(t.symbol);
-            const live = s && s.price !== null ? s.price : t.entry;
-            const invested = t.entry * t.qty;
-            const isLong = t.side === 'LONG';
-
-            const pnl = isLong ? (live - t.entry) * t.qty : (t.entry - live) * t.qty;
-            const retPct = invested > 0 ? (pnl / invested) * 100 : 0;
-
-            const tp  = isLong ? t.entry * 1.0628 : t.entry * 0.9372;
-            const avg = isLong ? t.entry * 0.9686 : t.entry * 1.0314;
-
-            let status = 'HOLD';
-            let stCls = 'badge-neutral';
-            if ((isLong && live >= tp) || (!isLong && live <= tp)) {
-              status = 'BOOK PROFIT';
-              stCls = 'badge-long';
-            } else if ((isLong && live <= avg) || (!isLong && live >= avg)) {
-              status = 'AVG / SL';
-              stCls = 'badge-wait';
-            }
-
-            totalCap += invested;
-            totalPnl += pnl;
-            const pnlCls = pnl > 0 ? 'text-green' : pnl < 0 ? 'text-red' : 'text-muted';
-
-            return `
-              <tr>
-                <td><strong class="mono">${t.symbol}</strong></td>
-                <td class="text-center"><span class="badge ${isLong ? 'badge-long' : 'badge-short'} mono">${t.side}</span></td>
-                <td class="text-right mono">${t.qty}</td>
-                <td class="text-right mono">₹${fmtPrice(t.entry)}</td>
-                <td class="text-right mono text-muted">${fmtINR(invested)}</td>
-                <td class="text-right mono text-cyan" style="font-weight:700;">₹${fmtPrice(live)}</td>
-                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtINR(pnl)}</td>
-                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtPct(retPct)}</td>
-                <td class="text-right mono text-green">₹${fmtPrice(tp)}</td>
-                <td class="text-right mono text-amber">₹${fmtPrice(avg)}</td>
-                <td class="text-center"><span class="badge ${stCls}">${status}</span></td>
-                <td class="text-center"><button type="button" class="btn btn-del" data-del-trade="${t.id}">✕</button></td>
-              </tr>
-            `;
-          }).join('');
-        }
-
-        const totalRet = totalCap > 0 ? (totalPnl / totalCap) * 100 : 0;
-        document.getElementById('sumCapital').textContent = fmtINR(totalCap);
-        const pnlEl = document.getElementById('sumPnl');
-        const roeEl = document.getElementById('sumRoe');
-        pnlEl.textContent = fmtINR(totalPnl);
-        roeEl.textContent = fmtPct(totalRet);
-        pnlEl.className = `kpi-val mono ${totalPnl > 0 ? 'text-green' : totalPnl < 0 ? 'text-red' : ''}`;
-        roeEl.className = `kpi-val mono ${totalRet > 0 ? 'text-green' : totalRet < 0 ? 'text-red' : ''}`;
-      }
-
-      function renderAll() {
-        recomputeRanks();
-        renderKPIs();
-        if (state.activeTab === 'screener') renderScreener();
-        else if (state.activeTab === 'signals') renderSignals();
-        else if (state.activeTab === 'tradelog') renderTradeLog();
-      }
-
-      function updateTgButtonUI() {
-        const btn = document.getElementById('tgToggleBtn');
-        btn.classList.toggle('active', state.tgEnabled && state.tgConfiguredOnRender);
-        if (!state.tgConfiguredOnRender) {
-          document.getElementById('tgLabel').textContent = 'Render TG: Not Set';
-        } else {
-          document.getElementById('tgLabel').textContent = state.tgEnabled ? 'Render TG Alert: ON' : 'Render TG Alert: OFF';
-        }
-      }
-
-      function loadStorage() {
-        try {
-          const t = JSON.parse(localStorage.getItem(STORAGE_TRADES) || '[]');
-          if (Array.isArray(t)) state.trades = t;
-          const p = JSON.parse(localStorage.getItem(STORAGE_PREFS) || '{}');
-          if (p.longTh >= 10 && p.longTh <= 55) {
-            state.longTh = p.longTh;
-            document.getElementById('longThInput').value = p.longTh;
-          }
-          if (p.shortTh >= 45 && p.shortTh <= 90) {
-            state.shortTh = p.shortTh;
-            document.getElementById('shortThInput').value = p.shortTh;
-          }
-          if (typeof p.tgEnabled === 'boolean') state.tgEnabled = p.tgEnabled;
-        } catch {}
-        updateThresholdLabels();
-        updateTgButtonUI();
-      }
-
-      function saveTrades() {
-        try { localStorage.setItem(STORAGE_TRADES, JSON.stringify(state.trades)); } catch {}
-      }
-
-      function savePrefs() {
-        try {
-          localStorage.setItem(STORAGE_PREFS, JSON.stringify({
-            longTh: state.longTh,
-            shortTh: state.shortTh,
-            tgEnabled: state.tgEnabled
-          }));
-        } catch {}
-      }
-
-      function exportCSV() {
-        if (state.trades.length === 0) { showToast('No trades to export yet.'); return; }
-        const headers = ['Symbol', 'Side', 'Qty', 'Entry Price', 'Invested', 'Live LTP', 'Unrealized PnL', 'Return %', 'Entry RSI'];
-        const rows = state.trades.map(t => {
-          const s = state.stocks.get(t.symbol);
-          const live = s && s.price !== null ? s.price : t.entry;
-          const inv = t.entry * t.qty;
-          const pnl = t.side === 'LONG' ? (live - t.entry) * t.qty : (t.entry - live) * t.qty;
-          const ret = inv > 0 ? (pnl / inv) * 100 : 0;
-          return [t.symbol, t.side, t.qty, t.entry, inv.toFixed(2), live, pnl.toFixed(2), ret.toFixed(2) + '%', t.rsi ?? ''].join(',');
-        });
-        const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `nifty50-trade-log-${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showToast('Nifty 50 trade log exported as CSV.', 'long');
-      }
-
-      function updateThresholdLabels() {
-        document.querySelectorAll('.long-th-txt').forEach(el => el.textContent = state.longTh);
-        document.querySelectorAll('.short-th-txt').forEach(el => el.textContent = state.shortTh);
-      }
-
-      function updatePosPreview() {
-        const entry = parseFloat(document.getElementById('fEntry').value) || 0;
-        const qty   = parseInt(document.getElementById('fQty').value, 10) || 0;
-        document.getElementById('posSizePreview').textContent = `Value: ${fmtINR(entry * qty)}`;
-      }
-
-      function switchTab(tab) {
-        state.activeTab = tab;
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-        document.getElementById(`tab-${tab}`).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-        renderAll();
-      }
-
-      function updateSortIndicators() {
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-          const ind = th.querySelector('.sort-ind');
-          if (!ind) return;
-          if (th.dataset.sort === state.sortKey) {
-            ind.textContent = state.sortDir === 'asc' ? ' ▲' : ' ▼';
-            ind.style.color = '#67e8f9';
-          } else {
-            ind.textContent = '';
-          }
-        });
-      }
-
-      function prefillForm(sym, side) {
-        const s = state.stocks.get(sym);
-        document.getElementById('fSym').value = sym;
-        document.getElementById('fSide').value = side;
-        if (s && s.price !== null) document.getElementById('fEntry').value = s.price.toFixed(2);
-        if (s && s.rsi !== null) document.getElementById('fRsi').value = s.rsi.toFixed(2);
-        updatePosPreview();
-        switchTab('tradelog');
-        document.getElementById('fQty').focus();
-        showToast(`Pre-filled ${side} ${sym} @ ₹${fmtPrice(s?.price)}`, side === 'LONG' ? 'long' : 'short');
-      }
-
-      function bindEvents() {
-        document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-        document.getElementById('kpiLongCard').addEventListener('click', () => switchTab('signals'));
-        document.getElementById('kpiShortCard').addEventListener('click', () => switchTab('signals'));
-
-        document.getElementById('sourceSelect').addEventListener('change', e => {
-          state.sourceMode = e.target.value;
-          runScan(true);
-        });
-
-        document.getElementById('intervalSelect').addEventListener('change', e => {
-          state.pollIntervalMs = parseInt(e.target.value, 10) || 0;
-          schedulePolling();
-        });
-
-        document.getElementById('refreshBtn').addEventListener('click', () => runScan(true));
-        document.getElementById('testConnBtn').addEventListener('click', () => runScan(true));
-
-        document.querySelectorAll('.btn-tf').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const tf = btn.dataset.tf;
-            if (tf === state.timeframe) return;
-            state.timeframe = tf;
-            document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === tf));
-            document.getElementById('headerTfBadge').textContent = tfDisplayLabel(tf);
-
-            const hasCached = Array.from(state.stocks.values()).some(s => s.rsiMap[tf] !== null);
-            if (state.activeSource === 'tv_direct' && hasCached) {
-              state.stocks.forEach(s => {
-                s.rsi = s.rsiMap[tf];
-              });
-              setLiveHeaderStatus('live', `LIVE • TV NSE ${tfDisplayLabel(tf)}`);
-              renderAll();
-            } else {
-              state.stocks.forEach(s => { s.rsi = s.rsiMap[tf]; });
-              renderAll();
-              runScan(true);
-            }
-          });
-        });
-
-        document.getElementById('longThInput').addEventListener('input', e => {
-          const v = parseInt(e.target.value, 10);
-          if (!isNaN(v) && v >= 10 && v <= 55) {
-            state.longTh = v;
-            savePrefs();
-            updateThresholdLabels();
-            renderAll();
-          }
-        });
-        document.getElementById('shortThInput').addEventListener('input', e => {
-          const v = parseInt(e.target.value, 10);
-          if (!isNaN(v) && v >= 45 && v <= 90) {
-            state.shortTh = v;
-            savePrefs();
-            updateThresholdLabels();
-            renderAll();
-          }
-        });
-
-        document.getElementById('searchInput').addEventListener('input', e => {
-          state.searchQuery = e.target.value;
-          renderScreener();
-        });
-        document.getElementById('sectorFilter').addEventListener('change', e => {
-          state.sectorFilter = e.target.value;
-          renderScreener();
-        });
-        document.getElementById('signalFilter').addEventListener('change', e => {
-          state.signalFilter = e.target.value;
-          renderScreener();
-        });
-
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
-          state.soundEnabled = !state.soundEnabled;
-          const btn = document.getElementById('soundToggleBtn');
-          btn.classList.toggle('active', state.soundEnabled);
-          document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
-          document.getElementById('soundLabel').textContent = state.soundEnabled ? 'Sound: ON' : 'Sound: OFF';
-          if (state.soundEnabled) {
-            playChime(false);
-            showToast(`Sound alerts ON (Long < ${state.longTh}, Short > ${state.shortTh})`, 'long');
-          }
-        });
-
-        document.getElementById('tgToggleBtn').addEventListener('click', () => {
-          if (!state.tgConfiguredOnRender) {
-            showToast('Render Environment mein TG_BOT_TOKEN aur TG_CHAT_ID set karein.', 'error');
-            return;
-          }
-          state.tgEnabled = !state.tgEnabled;
-          savePrefs();
-          updateTgButtonUI();
-          showToast(
-            state.tgEnabled
-              ? `Nifty 50 Render Telegram alerts ON (Long < ${state.longTh}, Short > ${state.shortTh})`
-              : 'Nifty 50 Render Telegram alerts OFF',
-            state.tgEnabled ? 'long' : 'info'
-          );
-        });
-
-        document.getElementById('tgTestBtn').addEventListener('click', async () => {
-          try {
-            const res = await fetch('/api/nifty-alert', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ test: true, timeframe: tfDisplayLabel(state.timeframe), long_th: state.longTh, short_th: state.shortTh })
-            });
-            const data = await res.json();
-            if (data.ok) showToast('Test message Render Telegram Bot se bhej diya gaya!', 'long');
-            else showToast(`Telegram Error: ${data.error}`, 'error');
-          } catch {
-            showToast('Server request failed.', 'error');
-          }
-        });
-
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-          th.addEventListener('click', () => {
-            const key = th.dataset.sort;
-            if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-            else { state.sortKey = key; state.sortDir = (key === 'price' || key === 'changePct') ? 'desc' : 'asc'; }
-            updateSortIndicators();
-            renderScreener();
-          });
-        });
-
-        document.addEventListener('click', e => {
-          const qBtn = e.target.closest('[data-quick-sym]');
-          if (qBtn) {
-            prefillForm(qBtn.dataset.quickSym, qBtn.dataset.quickSide);
-            return;
-          }
-          const dBtn = e.target.closest('[data-del-trade]');
-          if (dBtn) {
-            state.trades = state.trades.filter(t => t.id !== dBtn.dataset.delTrade);
-            saveTrades();
-            renderKPIs();
-            renderTradeLog();
-            showToast('Trade removed.');
-          }
-        });
-
-        document.getElementById('fEntry').addEventListener('input', updatePosPreview);
-        document.getElementById('fQty').addEventListener('input', updatePosPreview);
-        document.getElementById('autoFillBtn').addEventListener('click', () => {
-          const sym = document.getElementById('fSym').value;
-          const s = state.stocks.get(sym);
-          if (s && s.price !== null) {
-            document.getElementById('fEntry').value = s.price.toFixed(2);
-            if (s.rsi !== null) document.getElementById('fRsi').value = s.rsi.toFixed(2);
-            updatePosPreview();
-          }
-        });
-
-        document.getElementById('tradeForm').addEventListener('submit', e => {
-          e.preventDefault();
-          const symbol = document.getElementById('fSym').value;
-          const side   = document.getElementById('fSide').value;
-          const entry  = parseFloat(document.getElementById('fEntry').value);
-          const qty    = parseInt(document.getElementById('fQty').value, 10);
-          const rsiVal = document.getElementById('fRsi').value;
-
-          if (!symbol || isNaN(entry) || entry <= 0 || isNaN(qty) || qty <= 0) {
-            showToast('Enter a valid Entry Price and Quantity.', 'error');
-            return;
-          }
-
-          state.trades.push({
-            id: 'n50_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            symbol, side, entry, qty,
-            rsi: rsiVal !== '' ? parseFloat(rsiVal) : null
-          });
-          saveTrades();
-          renderKPIs();
-          renderTradeLog();
-          showToast(`Logged ${side} ${symbol} (${qty} qty @ ₹${fmtPrice(entry)})`, side === 'LONG' ? 'long' : 'short');
-        });
-
-        document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
-      }
-
-      (function initSciFiSimulation() {
-        const canvas = document.getElementById('sciFiBgCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-        const nodes = [];
-        const pulses = [];
-        const NODE_COUNT = 38;
-        let angle = 0;
-
-        function resize() {
-          w = window.innerWidth;
-          h = window.innerHeight;
-          canvas.width = w * dpr;
-          canvas.height = h * dpr;
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-
-        function seedNodes() {
-          nodes.length = 0;
-          for (let i = 0; i < NODE_COUNT; i++) {
-            nodes.push({
-              x: Math.random() * (w || 1400),
-              y: Math.random() * (h || 900),
-              vx: (Math.random() - 0.5) * 0.35,
-              vy: (Math.random() - 0.5) * 0.35,
-              r: 1.3 + Math.random() * 1.8,
-              cyan: Math.random() > 0.35
-            });
-          }
-        }
-
-        function spawnPulse() {
-          if (nodes.length < 2) return;
-          const a = nodes[Math.floor(Math.random() * nodes.length)];
-          const b = nodes[Math.floor(Math.random() * nodes.length)];
-          if (a !== b && Math.hypot(a.x - b.x, a.y - b.y) < 230) {
-            pulses.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, t: 0, speed: 0.018 + Math.random() * 0.02 });
-          }
-        }
-
-        resize();
-        seedNodes();
-        window.addEventListener('resize', resize);
-
-        function drawFrame() {
-          ctx.clearRect(0, 0, w, h);
-
-          const grid = 64;
-          ctx.strokeStyle = 'rgba(6, 182, 212, 0.045)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          for (let x = 0; x < w; x += grid) {
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, h);
-          }
-          for (let y = 0; y < h; y += grid) {
-            ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
-          }
-          ctx.stroke();
-
-          const cx = w * 0.82;
-          const cy = h * 0.28;
-          const baseR = Math.min(w, h) * 0.24;
-          angle += 0.0045;
-
-          [baseR * 0.55, baseR * 0.85, baseR * 1.15].forEach((rad, idx) => {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(angle * (idx % 2 === 0 ? 1 : -0.7));
-            ctx.strokeStyle = idx === 1 ? 'rgba(16, 185, 129, 0.11)' : 'rgba(6, 182, 212, 0.09)';
-            ctx.lineWidth = 1.1;
-            ctx.setLineDash(idx === 0 ? [8, 10] : idx === 1 ? [22, 14] : [4, 12]);
-            ctx.beginPath();
-            ctx.arc(0, 0, rad, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
-          });
-
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(angle * 2.2);
-          const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, baseR * 1.15);
-          grad.addColorStop(0, 'rgba(6, 182, 212, 0.14)');
-          grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.arc(0, 0, baseR * 1.15, 0, 0.42);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-
-          for (let i = 0; i < nodes.length; i++) {
-            const n = nodes[i];
-            n.x += n.vx;
-            n.y += n.vy;
-            if (n.x < 0 || n.x > w) n.vx *= -1;
-            if (n.y < 0 || n.y > h) n.vy *= -1;
-
-            for (let j = i + 1; j < nodes.length; j++) {
-              const m = nodes[j];
-              const dist = Math.hypot(n.x - m.x, n.y - m.y);
-              if (dist < 175) {
-                const alpha = (1 - dist / 175) * 0.16;
-                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha.toFixed(3)})`;
-                ctx.lineWidth = 0.8;
-                ctx.beginPath();
-                ctx.moveTo(n.x, n.y);
-                ctx.lineTo(m.x, m.y);
-                ctx.stroke();
-              }
-            }
-
-            ctx.fillStyle = n.cyan ? 'rgba(103, 232, 249, 0.45)' : 'rgba(16, 185, 129, 0.45)';
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          if (Math.random() < 0.08) spawnPulse();
-          for (let i = pulses.length - 1; i >= 0; i--) {
-            const p = pulses[i];
-            p.t += p.speed;
-            if (p.t >= 1) {
-              pulses.splice(i, 1);
-              continue;
-            }
-            const px = p.ax + (p.bx - p.ax) * p.t;
-            const py = p.ay + (p.by - p.ay) * p.t;
-            ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
-            ctx.beginPath();
-            ctx.arc(px, py, 2.1, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          const waveY = h * 0.86;
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.14)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          for (let x = 0; x <= w * 0.42; x += 6) {
-            const y = waveY + Math.sin(x * 0.025 + angle * 5) * 14 * Math.sin(x * 0.008);
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-
-          requestAnimationFrame(drawFrame);
-        }
-
-        requestAnimationFrame(drawFrame);
-      })();
-
-      function init() {
-        document.getElementById('fSym').innerHTML = STOCKS.map(s =>
-          `<option value="${s.symbol}">${s.symbol} — ${s.name}</option>`
-        ).join('');
-
-        const sectors = Array.from(new Set(STOCKS.map(s => s.sector))).sort();
-        const secSel = document.getElementById('sectorFilter');
-        sectors.forEach(sec => {
-          const opt = document.createElement('option');
-          opt.value = sec;
-          opt.textContent = sec;
-          secSel.appendChild(opt);
-        });
-
-        loadStorage();
-        updatePosPreview();
-        updateSortIndicators();
-        bindEvents();
-        renderAll();
-        checkRenderTelegramStatus();
-
-        runScan(true);
-        schedulePolling();
-      }
-
-      if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-    })();
-  </script>
-</body>
-</html>
-"""
-
-DASHBOARD_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Top 10 Crypto Futures RSI + VWAP + Funding — 2s Render Live Terminal</title>
-  <style>
-    :root {
-      --bg-main: #0b1120;
-      --bg-header: rgba(11, 17, 32, 0.96);
-      --bg-card: #111827;
-      --bg-card-hover: #162033;
-      --bg-input: #0f172a;
-      --border: #1e293b;
-      --border-light: #334155;
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.14);
-      --green-border: rgba(16, 185, 129, 0.38);
-      --red: #f43f5e;
-      --red-bg: rgba(244, 63, 94, 0.14);
-      --red-border: rgba(244, 63, 94, 0.38);
-      --amber: #f59e0b;
-      --amber-bg: rgba(245, 158, 11, 0.14);
-      --amber-border: rgba(245, 158, 11, 0.35);
-      --cyan: #06b6d4;
-      --cyan-light: #67e8f9;
-      --cyan-bg: rgba(6, 182, 212, 0.14);
-      --cyan-border: rgba(6, 182, 212, 0.35);
+      --cyan-bg: rgba(6, 182, 212, 0.16);
+      --cyan-border: rgba(6, 182, 212, 0.38);
       --purple: #a855f7;
       --purple-light: #d8b4fe;
-      --purple-bg: rgba(168, 85, 247, 0.14);
-      --purple-border: rgba(168, 85, 247, 0.38);
+      --purple-bg: rgba(168, 85, 247, 0.16);
+      --purple-border: rgba(168, 85, 247, 0.42);
       --radius: 10px;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -3109,7 +1049,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      background-color: var(--bg-main);
+      background-color: #030914 !important;
+      background-image:
+        radial-gradient(circle at 50% 22%, rgba(0, 212, 255, 0.11), transparent 48%),
+        radial-gradient(circle at 18% 82%, rgba(16, 185, 129, 0.08), transparent 45%),
+        radial-gradient(circle at 85% 78%, rgba(56, 189, 248, 0.09), transparent 45%) !important;
       color: var(--text-main);
       font-family: var(--font-sans);
       font-size: 14px;
@@ -3140,23 +1084,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .text-center { text-align: center; }
     .hidden { display: none !important; }
 
-    @keyframes flashUp {
-      0% { background-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
-      100% { background-color: transparent; }
-    }
-    @keyframes flashDown {
-      0% { background-color: rgba(244, 63, 94, 0.35); color: #fda4af; }
-      100% { background-color: transparent; }
-    }
-    .tick-up { animation: flashUp 0.7s ease-out; }
-    .tick-down { animation: flashDown 0.7s ease-out; }
-
     @keyframes pulseDot {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.4; transform: scale(0.85); }
     }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
 
+    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
     #sciFiBgCanvas {
       position: fixed;
       inset: 0;
@@ -3164,7 +1098,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       height: 100vh;
       z-index: 0;
       pointer-events: none;
-      opacity: 0.68;
+      opacity: 0.92;
     }
 
     .sci-fi-vignette {
@@ -3173,31 +1107,68 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       z-index: 0;
       pointer-events: none;
       background:
-        radial-gradient(circle at 50% 15%, rgba(6, 182, 212, 0.08), transparent 55%),
-        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.07), transparent 50%),
-        repeating-linear-gradient(0deg, rgba(6, 182, 212, 0.018) 0px, rgba(6, 182, 212, 0.018) 1px, transparent 1px, transparent 4px);
+        radial-gradient(circle at 50% 35%, transparent 38%, rgba(2, 6, 15, 0.72) 100%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(56, 189, 248, 0.022) 0px,
+          rgba(56, 189, 248, 0.022) 1px,
+          transparent 1px,
+          transparent 3px
+        );
     }
 
     .header, .main, .toast-wrap {
       position: relative;
       z-index: 2;
     }
+
     .header {
       position: sticky;
       top: 0;
       z-index: 40;
-      background: var(--bg-header);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(10px);
-    }
-    .card, .kpi-card {
-      background: rgba(17, 24, 39, 0.84) !important;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 0 24px rgba(6, 182, 212, 0.04);
+      background: rgba(5, 13, 27, 0.62) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.24) !important;
+      backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 24px rgba(6, 182, 212, 0.08);
     }
 
+    .card, .kpi-card, .control-group, .live-bar {
+      background: rgba(8, 18, 36, 0.34) !important;
+      border-color: rgba(56, 189, 248, 0.22) !important;
+      backdrop-filter: blur(10px) saturate(135%);
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.14),
+        0 8px 28px rgba(2, 8, 20, 0.38);
+    }
+
+    .kpi-card:hover, .card:hover {
+      border-color: rgba(103, 232, 249, 0.45) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.22),
+        0 0 24px rgba(6, 182, 212, 0.14);
+    }
+
+    thead th {
+      background: rgba(6, 15, 30, 0.72) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
+      color: #7dd3fc !important;
+    }
+
+    tbody tr {
+      background: rgba(8, 18, 36, 0.18);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.11) !important;
+      transition: background-color 0.12s;
+    }
+
+    tbody tr:hover {
+      background: rgba(14, 116, 144, 0.22) !important;
+    }
+
+    tbody tr.row-profit { background: rgba(16, 185, 129, 0.10) !important; }
+    tbody tr.row-loss   { background: rgba(244, 63, 94, 0.10) !important; }
+
     .container {
-      max-width: 1740px;
+      max-width: 1680px;
       margin: 0 auto;
       padding: 0 16px;
     }
@@ -3221,7 +1192,6 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       width: 38px;
       height: 38px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #10b981, #06b6d4);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -3231,8 +1201,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
-      border: 1px solid rgba(103, 232, 249, 0.55);
-      box-shadow: 0 0 18px rgba(6, 182, 212, 0.45), inset 0 0 10px rgba(255, 255, 255, 0.25);
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(16, 185, 129, 0.28)) !important;
+      border: 1px solid rgba(103, 232, 249, 0.75) !important;
+      box-shadow: 0 0 22px rgba(6, 182, 212, 0.55), inset 0 0 12px rgba(103, 232, 249, 0.35) !important;
     }
 
     .brand-title {
@@ -3261,16 +1232,16 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       border: 1px solid var(--border);
     }
 
-    .pill-tf {
+    .pill-cyan {
       background: var(--cyan-bg);
       color: var(--cyan-light);
       border-color: var(--cyan-border);
     }
 
-    .pill-cloud {
-      background: var(--green-bg);
-      color: #6ee7b7;
-      border-color: var(--green-border);
+    .pill-purple {
+      background: var(--purple-bg);
+      color: var(--purple-light);
+      border-color: var(--purple-border);
       font-size: 10px;
     }
 
@@ -3279,7 +1250,6 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 5px 12px;
@@ -3290,60 +1260,24 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--amber);
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
       flex-shrink: 0;
     }
-    .status-dot.live { background: var(--green); box-shadow: 0 0 8px rgba(16, 185, 129, 0.75); }
-    .status-dot.error { background: var(--red); }
 
     .live-sep { color: var(--border-light); user-select: none; }
-
-    .controls-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 0;
-      border-top: 1px solid rgba(30, 41, 59, 0.6);
-    }
-
-    .control-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-
-    .control-group label {
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
 
     select, input[type="number"], input[type="text"] {
       background: var(--bg-input);
       color: var(--text-main);
       border: 1px solid var(--border-light);
       border-radius: 6px;
-      padding: 5px 8px;
+      padding: 6px 9px;
       font-size: 12px;
       outline: none;
       transition: border-color 0.15s;
     }
-
     select:focus, input:focus { border-color: var(--cyan); }
-
-    .input-sm {
-      width: 52px;
-      text-align: center;
-      padding: 3px 4px !important;
-      font-weight: 700;
-    }
 
     .btn {
       display: inline-flex;
@@ -3356,52 +1290,14 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       font-weight: 600;
       cursor: pointer;
       border: 1px solid var(--border-light);
-      background: #1e293b;
+      background: rgba(15, 23, 42, 0.65);
       color: var(--text-main);
       transition: all 0.15s;
       white-space: nowrap;
       text-decoration: none;
     }
-    .btn:hover { background: #273549; border-color: #475569; }
+    .btn:hover { background: rgba(14, 116, 144, 0.35); border-color: #67e8f9; }
     .btn:active { transform: scale(0.97); }
-
-    .btn-tf {
-      padding: 5px 10px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--text-muted);
-      border-radius: 6px;
-    }
-    .btn-tf:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .btn-tf.active {
-      background: var(--green-bg);
-      color: #34d399;
-      border-color: var(--green-border);
-    }
-
-    .btn-vwap.active {
-      background: var(--amber-bg);
-      color: #fcd34d;
-      border-color: var(--amber-border);
-    }
-
-    .btn-funding.active {
-      background: var(--purple-bg);
-      color: var(--purple-light);
-      border-color: var(--purple-border);
-    }
-
-    .btn-sound.active {
-      background: var(--green-bg);
-      color: #34d399;
-      border-color: var(--green-border);
-    }
-
-    .btn-tg.active {
-      background: var(--cyan-bg);
-      color: var(--cyan-light);
-      border-color: var(--cyan-border);
-    }
 
     .btn-primary {
       background: linear-gradient(135deg, #10b981, #06b6d4);
@@ -3412,22 +1308,22 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .btn-primary:hover { filter: brightness(1.08); }
 
     .btn-long {
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 5px 10px;
+      font-size: 12px;
       background: var(--green-bg);
       color: #34d399;
       border-color: var(--green-border);
-      border-radius: 6px;
+      border-radius: 7px;
     }
     .btn-long:hover { background: rgba(16, 185, 129, 0.25); }
 
     .btn-short {
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 5px 10px;
+      font-size: 12px;
       background: var(--red-bg);
       color: #fb7185;
       border-color: var(--red-border);
-      border-radius: 6px;
+      border-radius: 7px;
     }
     .btn-short:hover { background: rgba(244, 63, 94, 0.25); }
 
@@ -3440,27 +1336,25 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     }
     .btn-del:hover { color: var(--red); background: var(--red-bg); }
 
-    .main { padding: 16px 0 36px; }
+    .main { padding: 18px 0 40px; }
 
+    /* 6 KPI CARDS */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .kpi-card {
-      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 13px 14px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: border-color 0.15s;
+      transition: all 0.15s;
     }
-    .kpi-card.clickable { cursor: pointer; }
-    .kpi-card.clickable:hover { border-color: var(--border-light); background: var(--bg-card-hover); }
 
     .kpi-top {
       display: flex;
@@ -3475,7 +1369,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     }
 
     .kpi-val {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 700;
       margin-top: 6px;
       display: flex;
@@ -3493,6 +1387,74 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       text-overflow: ellipsis;
     }
 
+    /* ALLOCATION & ANALYTICS SPLIT */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .panel-box {
+      padding: 15px 16px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .alloc-bar {
+      height: 12px;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .alloc-seg-crypto { background: linear-gradient(90deg, #06b6d4, #3b82f6); height: 100%; transition: width 0.35s ease; }
+    .alloc-seg-nifty  { background: linear-gradient(90deg, #10b981, #34d399); height: 100%; transition: width 0.35s ease; }
+
+    .alloc-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .risk-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .risk-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .risk-track {
+      flex: 1;
+      height: 7px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .risk-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    /* TABS & ACTIONS */
     .tabs-row {
       display: flex;
       flex-wrap: wrap;
@@ -3520,9 +1482,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       cursor: pointer;
       transition: all 0.15s;
     }
-    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.04); }
+    .tab-btn:hover { color: #fff; background: rgba(56, 189, 248, 0.08); }
     .tab-btn.active {
-      background: #1e293b;
+      background: rgba(14, 116, 144, 0.28);
       color: #fff;
       border-color: var(--border-light);
     }
@@ -3532,129 +1494,14 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       border-radius: 99px;
       font-size: 11px;
       font-weight: 700;
-      background: rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.24);
       color: var(--cyan-light);
     }
 
-    .legend-inline {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 14px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
     .card {
-      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-    }
-
-    .table-wrap { overflow-x: auto; width: 100%; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      white-space: nowrap;
-      font-size: 13px;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #0f172a;
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--border);
-      user-select: none;
-    }
-
-    thead th.sortable { cursor: pointer; }
-    thead th.sortable:hover { color: #fff; }
-
-    tbody tr {
-      border-bottom: 1px solid rgba(30, 41, 59, 0.7);
-      transition: background-color 0.12s;
-    }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(30, 41, 59, 0.45); }
-    tbody tr.row-long { background: rgba(16, 185, 129, 0.06); }
-    tbody tr.row-long:hover { background: rgba(16, 185, 129, 0.12); }
-    tbody tr.row-short { background: rgba(244, 63, 94, 0.06); }
-    tbody tr.row-short:hover { background: rgba(244, 63, 94, 0.12); }
-
-    tbody td { padding: 10px 12px; vertical-align: middle; }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid transparent;
-    }
-    .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
-    .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
-    .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
-    .badge-be { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .badge-neutral { background: #1e293b; color: #cbd5e1; border-color: #334155; }
-
-    .rsi-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 115px;
-    }
-    .rsi-bar-bg {
-      flex: 1;
-      height: 6px;
-      background: #1e293b;
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .rsi-bar-fill {
-      height: 100%;
-      border-radius: 99px;
-      transition: width 0.3s ease;
-    }
-
-    .action-btns { display: inline-flex; gap: 5px; }
-
-    .signals-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .signal-header {
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .signal-header.long-hd { background: rgba(16, 185, 129, 0.09); border-bottom-color: var(--green-border); }
-    .signal-header.short-hd { background: rgba(244, 63, 94, 0.09); border-bottom-color: var(--red-border); }
-
-    .empty-state {
-      padding: 36px 20px;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
     }
 
     .form-card { padding: 16px; margin-bottom: 14px; }
@@ -3670,7 +1517,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns: repeat(9, minmax(0, 1fr));
       gap: 10px;
       align-items: end;
     }
@@ -3682,7 +1529,53 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       margin-bottom: 4px;
       font-weight: 600;
     }
-    .field input, .field select { width: 100%; padding: 7px 9px; }
+    .field input, .field select { width: 100%; padding: 7px 8px; }
+
+    .table-wrap { overflow-x: auto; width: 100%; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 11px 12px;
+      user-select: none;
+    }
+
+    tbody td { padding: 10px 12px; vertical-align: middle; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .badge-long    { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+    .badge-short   { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .badge-wait    { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+    .badge-be      { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .badge-crypto  { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .badge-nifty   { background: var(--purple-bg); color: var(--purple-light); border-color: var(--purple-border); }
+    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; border-color: #334155; }
+
+    .empty-state {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
 
     .toast-wrap {
       position: fixed;
@@ -3702,34 +1595,31 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
-      background: #0f172a;
+      background: rgba(8, 18, 36, 0.88);
+      backdrop-filter: blur(10px);
       border: 1px solid var(--border-light);
       color: var(--text-main);
       box-shadow: 0 10px 25px rgba(0,0,0,0.45);
       animation: fadeSlide 0.25s ease-out;
     }
-    .toast.long { border-color: var(--green-border); color: #6ee7b7; background: #06281e; }
-    .toast.short { border-color: var(--red-border); color: #fda4af; background: #2d0a15; }
-    .toast.error { border-color: var(--red-border); color: #fecdd3; background: #2d0a15; }
+    .toast.long  { border-color: var(--green-border); color: #6ee7b7; background: rgba(6, 40, 30, 0.88); }
+    .toast.short { border-color: var(--red-border); color: #fda4af; background: rgba(45, 10, 21, 0.88); }
+    .toast.error { border-color: var(--red-border); color: #fecdd3; background: rgba(45, 10, 21, 0.88); }
 
     @keyframes fadeSlide {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 1280px) {
-      .form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-    @media (max-width: 1150px) {
+    @media (max-width: 1360px) {
       .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-    @media (max-width: 860px) {
-      .signals-grid { grid-template-columns: 1fr; }
-      .legend-inline { display: none; }
+    @media (max-width: 900px) {
+      .analytics-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .summary-grid { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
@@ -3742,15 +1632,15 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div class="container">
       <div class="header-inner">
         <div class="brand">
-          <div class="brand-icon" title="Quantum RVF Live Terminal">
+          <div class="brand-icon" title="J.A.R.V.I.S. Portfolio & P&L Engine">
             <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <defs>
-                <linearGradient id="sciGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <linearGradient id="sciGradPf" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stop-color="#04131c"/>
                   <stop offset="100%" stop-color="#022c22"/>
                 </linearGradient>
               </defs>
-              <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="url(#sciGrad)" stroke="#04131c" stroke-width="1.5"/>
+              <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="url(#sciGradPf)" stroke="#67e8f9" stroke-width="1.5"/>
               <circle cx="18" cy="18" r="10.5" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4 3"/>
               <path d="M9 21L14 15L18.5 19.5L27 11" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
               <circle cx="27" cy="11" r="2.5" fill="#10b981"/>
@@ -3759,371 +1649,265 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           </div>
           <div>
             <div class="brand-title">
-              <span>Top 10 Crypto Futures RSI + VWAP + Funding</span>
-              <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
-              <span class="pill pill-cloud mono">2S SCAN • 24/7 RENDER</span>
-              <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50 NSE →</a>
+              <span>J.A.R.V.I.S. Unified Live Portfolio &amp; P&amp;L</span>
+              <span class="pill pill-cyan mono">CRYPTO + NIFTY 50</span>
+              <span class="pill pill-purple mono">REAL-TIME SYNC</span>
+              <a href="/" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--cyan-border); color: var(--cyan-light);">🪙 Crypto Futures</a>
+              <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50 NSE</a>
             </div>
-            <div class="brand-sub">Har 2 Second Live Scan (Browser band hone par bhi) • Wilder's 14 RSI + Daily UTC VWAP + 8h Funding Filter</div>
+            <div class="brand-sub">Combined Crypto Futures (USDT) &amp; Nifty 50 Equity (INR) Live Positions • Realized P&amp;L • Hard SL &amp; Breakeven Tracker</div>
           </div>
         </div>
 
         <div class="live-bar">
-          <span id="liveDot" class="status-dot pulse-dot"></span>
-          <strong id="liveFeedName" class="mono">CONNECTING TO RENDER...</strong>
+          <span class="status-dot pulse-dot"></span>
+          <strong class="mono text-cyan">PORTFOLIO LIVE</strong>
           <span class="live-sep">|</span>
-          <span class="text-muted">2s Scans: <strong id="liveScanCount" class="mono text-cyan">0</strong></span>
+          <span class="text-muted">USD/INR:</span>
+          <input id="fxRateInput" type="number" step="0.1" min="50" max="150" value="84.5" class="mono" style="width: 64px; padding: 2px 6px; text-align: center; font-weight: 700;" title="USD to INR conversion rate for unified portfolio summary" />
           <span class="live-sep">|</span>
-          <span id="liveTimestamp" class="mono text-muted">--:--:-- IST</span>
-          <button id="rescanBtn" type="button" class="btn" style="padding: 3px 9px; font-size: 11px;">
-            ↻ Sync History
-          </button>
+          <span id="liveClock" class="mono text-muted">--:--:-- IST</span>
         </div>
-      </div>
-
-      <div class="controls-bar">
-        <div class="control-group" style="padding: 2px;">
-          <button type="button" data-tf="5m" class="btn btn-tf">5m</button>
-          <button type="button" data-tf="15m" class="btn btn-tf active">15m</button>
-          <button type="button" data-tf="1h" class="btn btn-tf">1h</button>
-        </div>
-
-        <div class="control-group">
-          <label for="longThInput" class="text-green">Long RSI &lt;</label>
-          <input id="longThInput" type="number" min="10" max="55" value="35" class="input-sm mono text-green" />
-        </div>
-
-        <div class="control-group">
-          <label for="shortThInput" class="text-red">Short RSI &gt;</label>
-          <input id="shortThInput" type="number" min="45" max="90" value="70" class="input-sm mono text-red" />
-        </div>
-
-        <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active" title="Render 2s Scanner par LONG sirf Price >= VWAP aur SHORT sirf Price <= VWAP">
-          <span>⚡</span>
-          <span id="vwapFilterLabel">VWAP Filter: ON</span>
-        </button>
-
-        <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active" title="Render 2s Scanner par LONG sirf Funding <= +0.01% aur SHORT sirf Funding >= 0%">
-          <span>💰</span>
-          <span id="fundingFilterLabel">Funding Filter: ON</span>
-        </button>
-
-        <button id="soundToggleBtn" type="button" class="btn btn-sound">
-          <span id="soundIcon">🔇</span>
-          <span id="soundLabel">Sound: OFF</span>
-        </button>
-
-        <button id="tgTestBtn" type="button" class="btn btn-tg active" title="Render 24/7 Telegram Bot Test Message bhejein">
-          <span>✈️</span>
-          <span id="tgStatusLabel">24/7 TG Bot: READY (Test)</span>
-        </button>
       </div>
     </div>
   </header>
 
   <main class="main container">
+
+    <!-- 6 UNIFIED PORTFOLIO KPI CARDS -->
     <section class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-top">
-          <span>Render 2s Live Sync</span>
-          <span id="kpiTfTag" class="mono text-cyan">15m</span>
+          <span>Crypto Margin (USDT)</span>
+          <span class="text-cyan mono">Futures</span>
         </div>
-        <div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div>
-        <div id="kpiFeedDetail" class="kpi-sub">Loading server snapshot...</div>
-      </div>
-
-      <div id="kpiLongCard" class="kpi-card clickable">
-        <div class="kpi-top">
-          <span>Long Signals (&lt; <span class="long-th-txt">35</span>)</span>
-          <span class="text-green">View →</span>
-        </div>
-        <div class="kpi-val mono">
-          <span id="kpiLongCount" class="text-green">0</span>
-          <span class="text-dim" style="font-size: 12px;">/ 10</span>
-        </div>
-        <div id="kpiLongSub" class="kpi-sub">Oversold + Above VWAP + Fund ≤ +0.01%</div>
-      </div>
-
-      <div id="kpiShortCard" class="kpi-card clickable">
-        <div class="kpi-top">
-          <span>Short Signals (&gt; <span class="short-th-txt">70</span>)</span>
-          <span class="text-red">View →</span>
-        </div>
-        <div class="kpi-val mono">
-          <span id="kpiShortCount" class="text-red">0</span>
-          <span class="text-dim" style="font-size: 12px;">/ 10</span>
-        </div>
-        <div id="kpiShortSub" class="kpi-sub">Overbought + Below VWAP + Fund ≥ 0%</div>
+        <div id="kpiCryptoCap" class="kpi-val mono">$0.00</div>
+        <div id="kpiCryptoPnl" class="kpi-sub mono">Unrealized: $0.00 (0.00%)</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-top">
-          <span>Most Oversold</span>
-          <span class="text-green mono">Lowest RSI</span>
+          <span>Nifty 50 Capital (INR)</span>
+          <span class="text-purple mono">NSE EQ</span>
         </div>
-        <div class="kpi-val">
-          <span id="kpiOversoldCoin" style="font-size: 16px;">--</span>
-          <span id="kpiOversoldRsi" class="mono text-green">--</span>
-        </div>
-        <div id="kpiOversoldPrice" class="kpi-sub mono">Mark: --</div>
+        <div id="kpiNiftyCap" class="kpi-val mono">₹0.00</div>
+        <div id="kpiNiftyPnl" class="kpi-sub mono">Unrealized: ₹0.00 (0.00%)</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-top">
-          <span>Most Overbought</span>
-          <span class="text-red mono">Highest RSI</span>
+          <span>Net Combined Value</span>
+          <span class="text-cyan mono">In INR</span>
         </div>
-        <div class="kpi-val">
-          <span id="kpiOverboughtCoin" style="font-size: 16px;">--</span>
-          <span id="kpiOverboughtRsi" class="mono text-red">--</span>
+        <div id="kpiTotalInr" class="kpi-val mono">₹0.00</div>
+        <div id="kpiTotalUnrealizedInr" class="kpi-sub mono">Open P&amp;L: ₹0.00</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Realized Closed P&amp;L</span>
+          <span class="text-green mono">Booked</span>
         </div>
-        <div id="kpiOverboughtPrice" class="kpi-sub mono">Mark: --</div>
+        <div id="kpiRealizedInr" class="kpi-val mono">₹0.00</div>
+        <div id="kpiClosedCount" class="kpi-sub mono">0 closed trades</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Win Rate</span>
+          <span class="text-amber mono">Accuracy</span>
+        </div>
+        <div id="kpiWinRate" class="kpi-val mono">0.0%</div>
+        <div id="kpiWinLossSplit" class="kpi-sub mono">0 Wins / 0 Losses</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Active Positions</span>
+          <span class="text-cyan mono">Open</span>
+        </div>
+        <div id="kpiOpenCount" class="kpi-val mono">0</div>
+        <div id="kpiRiskAlert" class="kpi-sub mono">All positions healthy</div>
       </div>
     </section>
 
+    <!-- ALLOCATION & RISK METERS -->
+    <section class="analytics-grid">
+      <div class="card panel-box">
+        <div class="panel-title">
+          <span>Capital Allocation (Crypto Futures vs Nifty 50 Equity)</span>
+          <span id="allocTotalTag" class="mono text-cyan">₹0.00 Total</span>
+        </div>
+        <div class="alloc-bar">
+          <div id="allocCryptoBar" class="alloc-seg-crypto" style="width: 50%;"></div>
+          <div id="allocNiftyBar" class="alloc-seg-nifty" style="width: 50%;"></div>
+        </div>
+        <div class="alloc-legend">
+          <span><strong class="text-cyan">● Crypto Futures:</strong> <span id="allocCryptoTxt" class="mono">50.0% (₹0)</span></span>
+          <span><strong class="text-green">● Nifty 50 NSE:</strong> <span id="allocNiftyTxt" class="mono">50.0% (₹0)</span></span>
+        </div>
+      </div>
+
+      <div class="card panel-box">
+        <div class="panel-title">
+          <span>Live Position Health &amp; Target Progress</span>
+          <span class="mono text-muted" style="font-size: 11px;">TP ±6.28% • Hard SL ±2.0% / ±4.8%</span>
+        </div>
+        <div class="risk-bars">
+          <div class="risk-row">
+            <span class="text-green" style="width: 115px;">In Profit / TP Zone</span>
+            <div class="risk-track"><div id="barInProfit" class="risk-fill" style="width: 0%; background: var(--green);"></div></div>
+            <span id="cntInProfit" class="mono" style="width: 32px; text-align: right;">0</span>
+          </div>
+          <div class="risk-row">
+            <span class="text-amber" style="width: 115px;">Neutral / Hold</span>
+            <div class="risk-track"><div id="barInHold" class="risk-fill" style="width: 0%; background: var(--cyan);"></div></div>
+            <span id="cntInHold" class="mono" style="width: 32px; text-align: right;">0</span>
+          </div>
+          <div class="risk-row">
+            <span class="text-red" style="width: 115px;">Drawdown / SL Risk</span>
+            <div class="risk-track"><div id="barInLoss" class="risk-fill" style="width: 0%; background: var(--red);"></div></div>
+            <span id="cntInLoss" class="mono" style="width: 32px; text-align: right;">0</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABS & EXPORT -->
     <div class="tabs-row">
       <div class="tabs-list">
-        <button type="button" data-tab="screener" class="tab-btn active">Top 10 Futures Screener</button>
-        <button type="button" data-tab="signals" class="tab-btn">
-          <span>Active Signals (LONG &amp; SHORT)</span>
-          <span id="tabSignalsBadge" class="tab-badge mono">0</span>
+        <button type="button" data-tab="open" class="tab-btn active">
+          <span>Open Live Positions</span>
+          <span id="tabOpenBadge" class="tab-badge mono">0</span>
         </button>
-        <button type="button" data-tab="tradelog" class="tab-btn">
-          <span>Futures Trade Log</span>
-          <span id="tabTradesBadge" class="tab-badge mono">0</span>
-        </button>
-        <button type="button" data-tab="alerts" class="tab-btn">
-          <span>24/7 Telegram Alert History</span>
-          <span id="tabAlertsBadge" class="tab-badge mono">0</span>
+        <button type="button" data-tab="closed" class="tab-btn">
+          <span>Closed History &amp; Realized P&amp;L</span>
+          <span id="tabClosedBadge" class="tab-badge mono">0</span>
         </button>
       </div>
 
-      <div class="legend-inline">
-        <span><strong class="text-cyan">●</strong> VWAP: Daily (00:00 UTC)</span>
-        <span><strong class="text-green">●</strong> TP: ±6.28% (2π)</span>
-        <span><strong class="text-amber">●</strong> Avg: ±3.14% (π)</span>
-        <span><strong class="text-red">●</strong> Hard SL: ±2.0% (Split ±4.8%)</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <select id="marketFilter" style="padding: 6px 10px;">
+          <option value="ALL">All Markets (Crypto + Nifty)</option>
+          <option value="CRYPTO">Crypto Futures Only</option>
+          <option value="NIFTY">Nifty 50 Equity Only</option>
+        </select>
+        <button id="exportAllCsvBtn" type="button" class="btn btn-long">⬇ Export Full CSV</button>
       </div>
     </div>
 
-    <section id="tab-screener" class="tab-panel">
+    <!-- QUICK ADD POSITION FORM -->
+    <form id="portfolioForm" class="card form-card">
+      <div class="form-header">
+        <strong>+ Add New Position to Portfolio (Auto-syncs with Crypto &amp; Nifty 50 Trade Logs)</strong>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="formPreviewTxt" class="mono text-muted" style="font-size: 12px;">Exposure: $500.00</span>
+          <button id="fillLiveBtn" type="button" class="btn" style="padding: 4px 9px; font-size: 11px;">Fill Live Price</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="pMarket">Market</label>
+          <select id="pMarket" required>
+            <option value="CRYPTO">Crypto Futures (USDT)</option>
+            <option value="NIFTY">Nifty 50 Equity (INR)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pSymbol">Asset / Symbol</label>
+          <select id="pSymbol" required></select>
+        </div>
+        <div class="field">
+          <label for="pSide">Side</label>
+          <select id="pSide" required>
+            <option value="LONG">LONG</option>
+            <option value="SHORT">SHORT</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pMode">SL Mode</label>
+          <select id="pMode">
+            <option value="single">Single (-2.0% SL)</option>
+            <option value="split">Split (-4.8% SL)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pEntry">Entry Price</label>
+          <input id="pEntry" type="number" step="any" min="0" required placeholder="0.00" class="mono" />
+        </div>
+        <div class="field">
+          <label id="lblCapital" for="pCapital">Margin (USDT)</label>
+          <input id="pCapital" type="number" step="any" min="1" required value="100" class="mono" />
+        </div>
+        <div class="field">
+          <label for="pLev">Leverage (Crypto)</label>
+          <input id="pLev" type="number" step="1" min="1" max="50" value="5" class="mono" />
+        </div>
+        <div class="field">
+          <label for="pRsi">Entry RSI</label>
+          <input id="pRsi" type="number" step="0.01" min="0" max="100" placeholder="32.50" class="mono" />
+        </div>
+        <div class="field">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px;">+ Add Position</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- TAB 1: OPEN LIVE POSITIONS -->
+    <section id="tab-open" class="tab-panel">
       <div class="card">
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th class="sortable" data-sort="sr">Rank <span class="sort-ind"></span></th>
-                <th class="sortable" data-sort="coin">Coin / Pair <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="price">Live Mark Price <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="vwapDiffPct">Daily VWAP (UTC) <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="prevClose">Prev Close <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="changePct">Candle Chg % <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="funding">8h Funding <span class="sort-ind"></span></th>
-                <th class="sortable" data-sort="rsi">14-Period RSI <span class="sort-ind"></span></th>
-                <th class="sortable text-center" data-sort="signal">Signal <span class="sort-ind"></span></th>
-                <th class="sortable text-center" data-sort="rsiRank">RSI Rank <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="target">Target ±6.28% (2π) <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="nextAvg">Next Avg ±3.14% (π) <span class="sort-ind"></span></th>
-                <th class="sortable text-right" data-sort="hardSl">Hard SL ±2.0% (Split ±4.8%) <span class="sort-ind"></span></th>
-                <th class="text-center">Quick Trade</th>
-              </tr>
-            </thead>
-            <tbody id="screenerTbody">
-              <tr><td colspan="14" class="empty-state">Fetching 2-second live data from Render server...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-signals" class="tab-panel hidden">
-      <div class="signals-grid">
-        <div class="card">
-          <div class="signal-header long-hd">
-            <div>
-              <strong class="text-green">LONG Signals (RSI &lt; <span class="long-th-txt">35</span><span class="active-filter-tags-long"></span>)</strong>
-              <div class="text-muted" style="font-size: 11px;">Sorted lowest RSI first • +6.28% TP / -3.14% Avg / -2.0% SL</div>
-            </div>
-            <span id="longSigCount" class="badge badge-long mono">0</span>
-          </div>
-          <div id="longSigEmpty" class="empty-state hidden">No coins currently match the LONG criteria.</div>
-          <div id="longSigWrap" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Coin</th>
-                  <th class="text-right">RSI</th>
-                  <th class="text-right">Mark Price</th>
-                  <th class="text-right">Daily VWAP</th>
-                  <th class="text-right">8h Fund</th>
-                  <th class="text-right">TP (+6.28%)</th>
-                  <th class="text-right">Avg (-3.14%)</th>
-                  <th class="text-right">Hard SL (-2.0%)</th>
-                  <th class="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="longSigTbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="signal-header short-hd">
-            <div>
-              <strong class="text-red">SHORT Signals (RSI &gt; <span class="short-th-txt">70</span><span class="active-filter-tags-short"></span>)</strong>
-              <div class="text-muted" style="font-size: 11px;">Sorted highest RSI first • -6.28% TP / +3.14% Avg / +2.0% SL</div>
-            </div>
-            <span id="shortSigCount" class="badge badge-short mono">0</span>
-          </div>
-          <div id="shortSigEmpty" class="empty-state hidden">No coins currently match the SHORT criteria.</div>
-          <div id="shortSigWrap" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Coin</th>
-                  <th class="text-right">RSI</th>
-                  <th class="text-right">Mark Price</th>
-                  <th class="text-right">Daily VWAP</th>
-                  <th class="text-right">8h Fund</th>
-                  <th class="text-right">TP (-6.28%)</th>
-                  <th class="text-right">Avg (+3.14%)</th>
-                  <th class="text-right">Hard SL (+2.0%)</th>
-                  <th class="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="shortSigTbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-tradelog" class="tab-panel hidden">
-      <div class="summary-grid">
-        <div class="kpi-card">
-          <div class="kpi-top"><span>Total Margin</span></div>
-          <div id="sumMargin" class="kpi-val mono">$0.00</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-top"><span>Unrealized P&amp;L</span></div>
-          <div id="sumPnl" class="kpi-val mono">$0.00</div>
-        </div>
-        <div class="kpi-card" style="flex-direction: row; align-items: center; justify-content: space-between;">
-          <div>
-            <div class="kpi-top"><span>Overall ROE %</span></div>
-            <div id="sumRoe" class="kpi-val mono">0.00%</div>
-          </div>
-          <button id="exportCsvBtn" type="button" class="btn btn-long" style="padding: 7px 12px; font-size: 12px;">⬇ Export CSV</button>
-        </div>
-      </div>
-
-      <form id="tradeForm" class="card form-card">
-        <div class="form-header">
-          <strong>Add Futures Trade (Isolated Leverage + Hard SL &amp; Breakeven Calculator)</strong>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span id="posSizePreview" class="mono text-muted" style="font-size: 12px;">Pos Size: $500.00</span>
-            <button id="autoFillBtn" type="button" class="btn" style="padding: 4px 9px; font-size: 11px;">Fill Live Price</button>
-          </div>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="fCoin">Coin</label>
-            <select id="fCoin" required></select>
-          </div>
-          <div class="field">
-            <label for="fSide">Side</label>
-            <select id="fSide" required>
-              <option value="LONG">LONG</option>
-              <option value="SHORT">SHORT</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="fMode">Entry Mode (SL)</label>
-            <select id="fMode" required>
-              <option value="single">Single Entry (-2.0% SL)</option>
-              <option value="split">Split Avg (-4.8% SL)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="fEntry">Entry Price (USDT)</label>
-            <input id="fEntry" type="number" step="any" min="0" required placeholder="0.00" class="mono" />
-          </div>
-          <div class="field">
-            <label for="fMargin">Margin (USDT)</label>
-            <input id="fMargin" type="number" step="any" min="1" required value="100" class="mono" />
-          </div>
-          <div class="field">
-            <label for="fLev">Leverage (1x–50x)</label>
-            <input id="fLev" type="number" step="1" min="1" max="50" required value="5" class="mono" />
-          </div>
-          <div class="field">
-            <label for="fRsi">Entry RSI</label>
-            <input id="fRsi" type="number" step="0.01" min="0" max="100" placeholder="32.50" class="mono" />
-          </div>
-          <div class="field">
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px;">+ Add Trade</button>
-          </div>
-        </div>
-      </form>
-
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Coin</th>
+                <th>Market</th>
+                <th>Symbol</th>
                 <th class="text-center">Side / Lev</th>
                 <th class="text-right">Entry Price</th>
-                <th class="text-right">Margin</th>
-                <th class="text-right">Pos Size</th>
+                <th class="text-right">Capital / Margin</th>
                 <th class="text-right">Live Price</th>
                 <th class="text-right">Unrealized P&amp;L</th>
-                <th class="text-right">ROE %</th>
-                <th class="text-right">Hard SL</th>
-                <th class="text-right">Est. Liq Price</th>
-                <th class="text-right">TP (±6.28%)</th>
-                <th class="text-right">Avg (±3.14%)</th>
+                <th class="text-right">ROE / Return %</th>
+                <th class="text-right">Target (±6.28%)</th>
+                <th class="text-right">Hard SL / Avg</th>
                 <th class="text-center">Status</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="openPositionsTbody"></tbody>
+          </table>
+        </div>
+        <div id="openPositionsEmpty" class="empty-state hidden">No open positions yet. Add one above or click <strong>+ Long / + Short</strong> on the Crypto or Nifty 50 pages.</div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CLOSED HISTORY -->
+    <section id="tab-closed" class="tab-panel hidden">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Closed Time</th>
+                <th>Market</th>
+                <th>Symbol</th>
+                <th class="text-center">Side / Lev</th>
+                <th class="text-right">Entry</th>
+                <th class="text-right">Exit Price</th>
+                <th class="text-right">Capital</th>
+                <th class="text-right">Realized P&amp;L</th>
+                <th class="text-right">Return %</th>
                 <th class="text-center">Del</th>
               </tr>
             </thead>
-            <tbody id="tradeLogTbody"></tbody>
+            <tbody id="closedPositionsTbody"></tbody>
           </table>
         </div>
-        <div id="tradeLogEmpty" class="empty-state hidden">No futures trades logged yet. Click <strong>+ Long</strong> or <strong>+ Short</strong> on any coin in the Screener.</div>
+        <div id="closedPositionsEmpty" class="empty-state hidden">No closed positions yet. Click <strong>Book / Close</strong> on any open position to lock in realized P&amp;L.</div>
       </div>
     </section>
 
-    <section id="tab-alerts" class="tab-panel hidden">
-      <div class="card">
-        <div class="signal-header">
-          <div>
-            <strong class="text-cyan">24/7 Server Telegram Alerts Log</strong>
-            <div class="text-muted" style="font-size: 11px;">Ye alerts Render server ne tab bhi bheje hain jab aapka browser band tha</div>
-          </div>
-          <span id="alertsHistoryCount" class="badge badge-be mono">0</span>
-        </div>
-        <div id="alertsEmpty" class="empty-state">Abhi tak server start hone ke baad koi naya LONG/SHORT alert trigger nahi hua hai.</div>
-        <div id="alertsWrap" class="table-wrap hidden">
-          <table>
-            <thead>
-              <tr>
-                <th>Time (IST)</th>
-                <th>Pair</th>
-                <th class="text-center">Signal</th>
-                <th class="text-center">TF</th>
-                <th class="text-right">Trigger Price</th>
-                <th class="text-right">RSI (14)</th>
-                <th class="text-right">Daily VWAP</th>
-                <th class="text-right">8h Funding</th>
-              </tr>
-            </thead>
-            <tbody id="alertsHistoryTbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
   </main>
 
   <div id="toastWrap" class="toast-wrap"></div>
@@ -4132,27 +1916,44 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     (() => {
       'use strict';
 
-      const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
+      // Shared localStorage keys so positions added on "/" or "/nifty" appear here automatically!
+      const STORAGE_CRYPTO_TRADES = 'top10_futures_rsi_v3_trades';
+      const STORAGE_NIFTY_TRADES  = 'nifty50_rsi_v4_trades';
+      const STORAGE_CLOSED_TRADES = 'jarvis_portfolio_closed_v1';
+      const STORAGE_FX_RATE       = 'jarvis_portfolio_fx_inr';
+
+      const CRYPTO_LIST = [
+        { coin: 'BTC',  pair: 'BTCUSDT',  name: 'Bitcoin' },
+        { coin: 'ETH',  pair: 'ETHUSDT',  name: 'Ethereum' },
+        { coin: 'SOL',  pair: 'SOLUSDT',  name: 'Solana' },
+        { coin: 'XRP',  pair: 'XRPUSDT',  name: 'XRP' },
+        { coin: 'BNB',  pair: 'BNBUSDT',  name: 'BNB' },
+        { coin: 'DOGE', pair: 'DOGEUSDT', name: 'Dogecoin' },
+        { coin: 'SUI',  pair: 'SUIUSDT',  name: 'Sui' },
+        { coin: 'ADA',  pair: 'ADAUSDT',  name: 'Cardano' },
+        { coin: 'AVAX', pair: 'AVAXUSDT', name: 'Avalanche' },
+        { coin: 'LINK', pair: 'LINKUSDT', name: 'Chainlink' }
+      ];
+
+      const NIFTY_SYMBOLS = [
+        'RELIANCE','HDFCBANK','TCS','BHARTIARTL','ICICIBANK','SBIN','INFY','BAJFINANCE','HINDUNILVR','ITC',
+        'LT','HCLTECH','KOTAKBANK','SUNPHARMA','MARUTI','M&M','AXISBANK','ULTRACEMCO','NTPC','BAJAJFINSV',
+        'TITAN','ADANIPORTS','ONGC','BEL','ADANIENT','POWERGRID','WIPRO','JSWSTEEL','TATAMOTORS','COALINDIA',
+        'ASIANPAINT','BAJAJ-AUTO','NESTLEIND','TRENT','GRASIM','EICHERMOT','SBILIFE','TECHM','HINDALCO','TATASTEEL',
+        'HDFCLIFE','SHRIRAMFIN','CIPLA','APOLLOHOSP','DRREDDY','TATACONSUM','HEROMOTOCO','INDUSINDBK','JIOFIN','BRITANNIA'
+      ];
+
+      const TV_SYM_MAP = { 'M&M': 'M_M', 'BAJAJ-AUTO': 'BAJAJ_AUTO' };
 
       const state = {
-        config: {
-          timeframe: '15m',
-          long_th: 35,
-          short_th: 70,
-          vwap_filter: true,
-          funding_filter: true,
-          cooldown_min: 15
-        },
-        coins: [],
-        prevPrices: new Map(),
-        prevSignals: new Map(),
-        alertHistory: [],
-        trades: [],
-        activeTab: 'screener',
-        sortKey: 'rsi',
-        sortDir: 'asc',
-        soundEnabled: false,
-        audioCtx: null
+        cryptoTrades: [],
+        niftyTrades: [],
+        closedTrades: [],
+        cryptoPrices: new Map(),
+        niftyPrices: new Map(),
+        fxRate: 84.5,
+        activeTab: 'open',
+        marketFilter: 'ALL'
       };
 
       function fmtPrice(v) {
@@ -4171,49 +1972,14 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
 
+      function fmtINR(v) {
+        if (v === null || v === undefined || isNaN(v)) return '--';
+        return (v < 0 ? '-₹' : '₹') + Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
       function fmtPct(v) {
         if (v === null || v === undefined || isNaN(v)) return '--';
         return (v > 0 ? '+' : '') + v.toFixed(2) + '%';
-      }
-
-      function fmtFunding(v) {
-        if (v === null || v === undefined || isNaN(v)) return '—';
-        const pct = v * 100;
-        return (pct > 0 ? '+' : '') + pct.toFixed(4) + '%';
-      }
-
-      function signalBadge(sig, rsi) {
-        if (!sig || rsi === null) return { label: 'LOAD', cls: 'badge-neutral', bar: '#475569' };
-        if (sig === 'LONG') return { label: 'LONG', cls: 'badge-long', bar: '#10b981' };
-        if (sig === 'SHORT') return { label: 'SHORT', cls: 'badge-short', bar: '#f43f5e' };
-        return { label: 'WAIT', cls: 'badge-wait', bar: '#06b6d4' };
-      }
-
-      function playChime(isShort = false) {
-        if (!state.soundEnabled) return;
-        try {
-          if (!state.audioCtx) {
-            const Ctx = window.AudioContext || window.webkitAudioContext;
-            state.audioCtx = new Ctx();
-          }
-          if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
-          const ctx = state.audioCtx;
-          const now = ctx.currentTime;
-          const freqs = isShort ? [784, 523.25] : [587.33, 880];
-          freqs.forEach((f, i) => {
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(f, now + i * 0.11);
-            g.gain.setValueAtTime(0.001, now + i * 0.11);
-            g.gain.exponentialRampToValueAtTime(0.08, now + i * 0.11 + 0.02);
-            g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.11 + 0.3);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(now + i * 0.11);
-            osc.stop(now + i * 0.11 + 0.32);
-          });
-        } catch {}
       }
 
       function showToast(msg, type = 'info') {
@@ -4225,841 +1991,731 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         setTimeout(() => el.remove(), 3400);
       }
 
-      async function fetchServerState() {
+      function loadAllStorage() {
+        try {
+          const c = JSON.parse(localStorage.getItem(STORAGE_CRYPTO_TRADES) || '[]');
+          if (Array.isArray(c)) state.cryptoTrades = c;
+          const n = JSON.parse(localStorage.getItem(STORAGE_NIFTY_TRADES) || '[]');
+          if (Array.isArray(n)) state.niftyTrades = n;
+          const cl = JSON.parse(localStorage.getItem(STORAGE_CLOSED_TRADES) || '[]');
+          if (Array.isArray(cl)) state.closedTrades = cl;
+          const fx = parseFloat(localStorage.getItem(STORAGE_FX_RATE));
+          if (!isNaN(fx) && fx >= 50 && fx <= 150) {
+            state.fxRate = fx;
+            document.getElementById('fxRateInput').value = fx;
+          }
+        } catch {}
+      }
+
+      function saveCryptoTrades() {
+        try { localStorage.setItem(STORAGE_CRYPTO_TRADES, JSON.stringify(state.cryptoTrades)); } catch {}
+      }
+      function saveNiftyTrades() {
+        try { localStorage.setItem(STORAGE_NIFTY_TRADES, JSON.stringify(state.niftyTrades)); } catch {}
+      }
+      function saveClosedTrades() {
+        try { localStorage.setItem(STORAGE_CLOSED_TRADES, JSON.stringify(state.closedTrades)); } catch {}
+      }
+
+      async function fetchLiveCryptoPrices() {
         try {
           const res = await fetch('/api/state', { cache: 'no-store' });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
+          if (!res.ok) return;
           const data = await res.json();
-
-          document.getElementById('liveDot').className = 'status-dot live pulse-dot';
-          document.getElementById('liveFeedName').textContent = data.active_feed || 'LIVE • 2s Scan';
-          document.getElementById('liveScanCount').textContent = (data.scans_completed || 0).toLocaleString();
-          document.getElementById('liveTimestamp').textContent = data.last_scan || '--:--:-- IST';
-          document.getElementById('kpiSyncTime').textContent = data.last_scan || '--:--:-- IST';
-          document.getElementById('kpiFeedDetail').textContent = data.active_feed || 'Connected';
-
-          const tgBtn = document.getElementById('tgTestBtn');
-          if (data.tg_configured) {
-            tgBtn.classList.add('active');
-            document.getElementById('tgStatusLabel').textContent = `24/7 TG Bot: ON (${data.alerts_sent || 0} sent)`;
-          } else {
-            tgBtn.classList.remove('active');
-            document.getElementById('tgStatusLabel').textContent = '24/7 TG Bot: Set Env Vars';
-          }
-
-          if (data.config) {
-            state.config = data.config;
-            syncControlsFromConfig();
-          }
-
           if (Array.isArray(data.coins)) {
             data.coins.forEach(c => {
-              const prevSig = state.prevSignals.get(c.coin);
-              if (prevSig && prevSig !== c.signal && c.rsi !== null) {
-                if (c.signal === 'LONG') {
-                  playChime(false);
-                  showToast(`LONG Signal: ${c.pair} RSI ${c.rsi.toFixed(2)}`, 'long');
-                } else if (c.signal === 'SHORT') {
-                  playChime(true);
-                  showToast(`SHORT Signal: ${c.pair} RSI ${c.rsi.toFixed(2)}`, 'short');
-                }
+              if (c.coin && typeof c.price === 'number') {
+                state.cryptoPrices.set(c.coin, c.price);
               }
-              state.prevSignals.set(c.coin, c.signal);
             });
-            state.coins = data.coins;
           }
-
-          if (Array.isArray(data.alert_history)) {
-            state.alertHistory = data.alert_history;
-          }
-
-          populateCoinSelectIfNeeded();
-          renderAll();
-        } catch (err) {
-          document.getElementById('liveDot').className = 'status-dot error';
-          document.getElementById('liveFeedName').textContent = 'RECONNECTING...';
-        }
+        } catch {}
       }
 
-      async function pushConfigUpdate(patch, forceHistory = false) {
+      async function fetchLiveNiftyPrices() {
+        if (state.niftyTrades.length === 0 && document.getElementById('pMarket').value !== 'NIFTY') return;
         try {
-          const res = await fetch('/api/config', {
+          const tickers = NIFTY_SYMBOLS.map(s => `NSE:${TV_SYM_MAP[s] || s}`);
+          const res = await fetch('https://scanner.tradingview.com/india/scan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...patch, rescan: true, force_history: forceHistory })
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+            body: JSON.stringify({ symbols: { tickers, query: { types: [] } }, columns: ['close'] })
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.config) {
-              state.config = data.config;
-              syncControlsFromConfig();
-            }
-            setTimeout(fetchServerState, 800);
+          if (!res.ok) return;
+          const json = await res.json();
+          if (Array.isArray(json.data)) {
+            json.data.forEach(row => {
+              const raw = String(row.s || '').replace('NSE:', '');
+              const sym = raw === 'M_M' ? 'M&M' : raw === 'BAJAJ_AUTO' ? 'BAJAJ-AUTO' : raw;
+              if (Array.isArray(row.d) && typeof row.d[0] === 'number') {
+                state.niftyPrices.set(sym, row.d[0]);
+              }
+            });
           }
-        } catch {
-          showToast('Server config update failed.', 'error');
-        }
+        } catch {}
       }
 
-      function syncControlsFromConfig() {
-        const cfg = state.config;
-        document.getElementById('headerTfBadge').textContent = cfg.timeframe.toUpperCase();
-        document.getElementById('kpiTfTag').textContent = cfg.timeframe;
-        document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === cfg.timeframe));
+      function buildUnifiedPositions() {
+        const rows = [];
 
-        const longIn = document.getElementById('longThInput');
-        if (document.activeElement !== longIn) longIn.value = cfg.long_th;
-        const shortIn = document.getElementById('shortThInput');
-        if (document.activeElement !== shortIn) shortIn.value = cfg.short_th;
+        state.cryptoTrades.forEach(t => {
+          const live = state.cryptoPrices.get(t.coin) ?? t.entry;
+          const posSize = t.margin * t.lev;
+          const qty = t.entry > 0 ? posSize / t.entry : 0;
+          const isLong = t.side === 'LONG';
+          const isSplit = t.mode === 'split';
+          const pnl = isLong ? (live - t.entry) * qty : (t.entry - live) * qty;
+          const roe = t.margin > 0 ? (pnl / t.margin) * 100 : 0;
+          const tp = isLong ? t.entry * 1.0628 : t.entry * 0.9372;
+          const slPct = isSplit ? 0.048 : 0.02;
+          const hardSl = isLong ? t.entry * (1 - slPct) : t.entry * (1 + slPct);
 
-        document.querySelectorAll('.long-th-txt').forEach(el => el.textContent = cfg.long_th);
-        document.querySelectorAll('.short-th-txt').forEach(el => el.textContent = cfg.short_th);
+          let status = 'HOLD';
+          let stCls = 'badge-neutral';
+          if ((isLong && live >= tp) || (!isLong && live <= tp)) { status = 'TP HIT'; stCls = 'badge-long'; }
+          else if ((isLong && live <= hardSl) || (!isLong && live >= hardSl)) { status = 'SL RISK'; stCls = 'badge-short'; }
+          else if (pnl > 0) { status = 'IN PROFIT'; stCls = 'badge-be'; }
 
-        const vBtn = document.getElementById('vwapFilterToggleBtn');
-        vBtn.classList.toggle('active', cfg.vwap_filter);
-        document.getElementById('vwapFilterLabel').textContent = cfg.vwap_filter ? 'VWAP Filter: ON' : 'VWAP Filter: OFF';
-
-        const fBtn = document.getElementById('fundingFilterToggleBtn');
-        fBtn.classList.toggle('active', cfg.funding_filter);
-        document.getElementById('fundingFilterLabel').textContent = cfg.funding_filter ? 'Funding Filter: ON' : 'Funding Filter: OFF';
-
-        const longParts = [];
-        if (cfg.vwap_filter) longParts.push('Above VWAP');
-        if (cfg.funding_filter) longParts.push('Fund ≤ +0.01%');
-
-        const shortParts = [];
-        if (cfg.vwap_filter) shortParts.push('Below VWAP');
-        if (cfg.funding_filter) shortParts.push('Fund ≥ 0%');
-
-        document.getElementById('kpiLongSub').textContent = longParts.length
-          ? `Oversold + ${longParts.join(' + ')}`
-          : 'Oversold dip setups';
-        document.getElementById('kpiShortSub').textContent = shortParts.length
-          ? `Overbought + ${shortParts.join(' + ')}`
-          : 'Overbought reversal setups';
-
-        document.querySelectorAll('.active-filter-tags-long').forEach(el => {
-          el.textContent = longParts.length ? ' + ' + longParts.join(' + ') : '';
-        });
-        document.querySelectorAll('.active-filter-tags-short').forEach(el => {
-          el.textContent = shortParts.length ? ' + ' + shortParts.join(' + ') : '';
-        });
-      }
-
-      function populateCoinSelectIfNeeded() {
-        const sel = document.getElementById('fCoin');
-        if (sel.options.length === 0 && state.coins.length > 0) {
-          sel.innerHTML = state.coins.map(c =>
-            `<option value="${c.coin}">${c.pair} — ${c.name}</option>`
-          ).join('');
-        }
-      }
-
-      function renderKPIs() {
-        const loaded = state.coins.filter(c => c.rsi !== null && c.rsi !== undefined);
-        const longs = loaded.filter(c => c.signal === 'LONG');
-        const shorts = loaded.filter(c => c.signal === 'SHORT');
-
-        document.getElementById('kpiLongCount').textContent = longs.length;
-        document.getElementById('kpiShortCount').textContent = shorts.length;
-        document.getElementById('tabSignalsBadge').textContent = longs.length + shorts.length;
-        document.getElementById('tabTradesBadge').textContent = state.trades.length;
-        document.getElementById('tabAlertsBadge').textContent = state.alertHistory.length;
-
-        if (loaded.length > 0) {
-          const sorted = loaded.slice().sort((a, b) => a.rsi - b.rsi);
-          const low = sorted[0];
-          const high = sorted[sorted.length - 1];
-
-          document.getElementById('kpiOversoldCoin').textContent = low.pair;
-          document.getElementById('kpiOversoldRsi').textContent = low.rsi.toFixed(2);
-          document.getElementById('kpiOversoldPrice').textContent = `Mark: $${fmtPrice(low.price)}`;
-
-          document.getElementById('kpiOverboughtCoin').textContent = high.pair;
-          document.getElementById('kpiOverboughtRsi').textContent = high.rsi.toFixed(2);
-          document.getElementById('kpiOverboughtPrice').textContent = `Mark: $${fmtPrice(high.price)}`;
-        }
-      }
-
-      function rsiGaugeHtml(rsi, sigObj) {
-        if (rsi === null || rsi === undefined || isNaN(rsi)) return '<span class="mono text-dim">--</span>';
-        const w = Math.max(0, Math.min(100, rsi));
-        const clr = rsi < state.config.long_th ? 'text-green' : rsi > state.config.short_th ? 'text-red' : '';
-        return `
-          <div class="rsi-cell">
-            <span class="mono ${clr}" style="font-weight:700; width:44px;">${rsi.toFixed(2)}</span>
-            <div class="rsi-bar-bg"><div class="rsi-bar-fill" style="width:${w}%; background:${sigObj.bar};"></div></div>
-          </div>
-        `;
-      }
-
-      function vwapCellHtml(c) {
-        if (c.vwap === null || c.vwap === undefined || isNaN(c.vwap)) return '<span class="mono text-dim">--</span>';
-        const isAbove = c.vwapDiffPct >= 0;
-        const diffCls = isAbove ? 'text-green' : 'text-red';
-        const tag = isAbove ? 'ABOVE' : 'BELOW';
-        return `
-          <div class="mono text-cyan" style="font-weight:600;">${fmtPrice(c.vwap)}</div>
-          <div class="mono ${diffCls}" style="font-size:10px; font-weight:700;">${tag} ${fmtPct(c.vwapDiffPct)}</div>
-        `;
-      }
-
-      function renderScreener() {
-        const tbody = document.getElementById('screenerTbody');
-        if (state.coins.length === 0) return;
-
-        const list = state.coins.slice();
-        const dir = state.sortDir === 'asc' ? 1 : -1;
-
-        list.sort((a, b) => {
-          let va, vb;
-          switch (state.sortKey) {
-            case 'sr':          va = a.sr; vb = b.sr; break;
-            case 'coin':        va = a.coin; vb = b.coin; break;
-            case 'price':       va = a.price; vb = b.price; break;
-            case 'vwapDiffPct': va = a.vwapDiffPct; vb = b.vwapDiffPct; break;
-            case 'prevClose':   va = a.prevClose; vb = b.prevClose; break;
-            case 'changePct':   va = a.changePct; vb = b.changePct; break;
-            case 'funding':     va = a.funding; vb = b.funding; break;
-            case 'rsi':         va = a.rsi; vb = b.rsi; break;
-            case 'rsiRank':     va = a.rsiRank; vb = b.rsiRank; break;
-            case 'target':      va = a.price ? a.price * 1.0628 : null; vb = b.price ? b.price * 1.0628 : null; break;
-            case 'nextAvg':     va = a.price ? a.price * 0.9686 : null; vb = b.price ? b.price * 0.9686 : null; break;
-            case 'hardSl':      va = a.price ? a.price * 0.98 : null; vb = b.price ? b.price * 0.98 : null; break;
-            case 'signal':      va = a.signal; vb = b.signal; break;
-            default:            va = a.rsi; vb = b.rsi;
-          }
-          if (va === null || va === undefined) return 1;
-          if (vb === null || vb === undefined) return -1;
-          if (typeof va === 'string') return va.localeCompare(vb) * dir;
-          return (va - vb) * dir;
+          rows.push({
+            id: t.id,
+            market: 'CRYPTO',
+            symbol: t.coin + 'USDT',
+            rawSym: t.coin,
+            side: t.side,
+            lev: t.lev,
+            mode: t.mode || 'single',
+            entry: t.entry,
+            capital: t.margin,
+            live,
+            pnl,
+            roe,
+            tp,
+            slOrAvg: hardSl,
+            status,
+            stCls
+          });
         });
 
-        tbody.innerHTML = list.map(c => {
-          const sigObj = signalBadge(c.signal, c.rsi);
-          const isShortBias = c.signal === 'SHORT' || (c.rsi !== null && c.rsi > state.config.short_th);
-          const tp = c.price !== null ? (isShortBias ? c.price * 0.9372 : c.price * 1.0628) : null;
-          const avg = c.price !== null ? (isShortBias ? c.price * 1.0314 : c.price * 0.9686) : null;
-          const hardSl = c.price !== null ? (isShortBias ? c.price * 1.02 : c.price * 0.98) : null;
-          const splitSl = c.price !== null ? (isShortBias ? c.price * 1.048 : c.price * 0.952) : null;
+        state.niftyTrades.forEach(t => {
+          const live = state.niftyPrices.get(t.symbol) ?? t.entry;
+          const invested = t.entry * t.qty;
+          const isLong = t.side === 'LONG';
+          const pnl = isLong ? (live - t.entry) * t.qty : (t.entry - live) * t.qty;
+          const roe = invested > 0 ? (pnl / invested) * 100 : 0;
+          const tp = isLong ? t.entry * 1.0628 : t.entry * 0.9372;
+          const avg = isLong ? t.entry * 0.9686 : t.entry * 1.0314;
 
-          const prevP = state.prevPrices.get(c.coin);
-          let flashCls = '';
-          if (prevP !== undefined && c.price !== prevP) {
-            flashCls = c.price > prevP ? 'tick-up' : 'tick-down';
-          }
-          state.prevPrices.set(c.coin, c.price);
+          let status = 'HOLD';
+          let stCls = 'badge-neutral';
+          if ((isLong && live >= tp) || (!isLong && live <= tp)) { status = 'TP HIT'; stCls = 'badge-long'; }
+          else if ((isLong && live <= avg) || (!isLong && live >= avg)) { status = 'AVG ZONE'; stCls = 'badge-wait'; }
+          else if (pnl > 0) { status = 'IN PROFIT'; stCls = 'badge-be'; }
 
-          const chgCls = c.changePct > 0 ? 'text-green' : c.changePct < 0 ? 'text-red' : 'text-muted';
-          const fundCls = c.funding > 0.0001 ? 'text-red' : c.funding > 0 ? 'text-amber' : c.funding < 0 ? 'text-cyan' : 'text-dim';
-          const rowCls = c.signal === 'LONG' ? 'row-long' : c.signal === 'SHORT' ? 'row-short' : '';
+          rows.push({
+            id: t.id,
+            market: 'NIFTY',
+            symbol: t.symbol,
+            rawSym: t.symbol,
+            side: t.side,
+            lev: 1,
+            qty: t.qty,
+            entry: t.entry,
+            capital: invested,
+            live,
+            pnl,
+            roe,
+            tp,
+            slOrAvg: avg,
+            status,
+            stCls
+          });
+        });
 
-          return `
-            <tr class="${rowCls}">
-              <td class="mono text-dim">#${c.sr}</td>
-              <td>
-                <strong class="mono">${c.pair}</strong>
-                <div class="text-muted" style="font-size:11px;">${c.name}</div>
-              </td>
-              <td class="text-right mono ${flashCls}" style="font-weight:700;">${fmtPrice(c.price)}</td>
-              <td class="text-right">${vwapCellHtml(c)}</td>
-              <td class="text-right mono text-muted">${fmtPrice(c.prevClose)}</td>
-              <td class="text-right mono ${chgCls}" style="font-weight:600;">${fmtPct(c.changePct)}</td>
-              <td class="text-right mono ${fundCls}" style="font-size:12px;">${fmtFunding(c.funding)}</td>
-              <td>${rsiGaugeHtml(c.rsi, sigObj)}</td>
-              <td class="text-center"><span class="badge ${sigObj.cls}">${sigObj.label}</span></td>
-              <td class="text-center mono ${c.rsiRank && c.rsiRank <= 2 ? 'text-green' : 'text-muted'}">${c.rsiRank ? '#' + c.rsiRank : '--'}</td>
-              <td class="text-right mono text-green">${fmtPrice(tp)}</td>
-              <td class="text-right mono text-amber">${fmtPrice(avg)}</td>
-              <td class="text-right">
-                <div class="mono text-red" style="font-weight:700;">${fmtPrice(hardSl)}</div>
-                <div class="mono text-dim" style="font-size:10px;">Split: ${fmtPrice(splitSl)}</div>
-              </td>
-              <td class="text-center">
-                <div class="action-btns">
-                  <button type="button" class="btn btn-long" data-quick-coin="${c.coin}" data-quick-side="LONG">+ Long</button>
-                  <button type="button" class="btn btn-short" data-quick-coin="${c.coin}" data-quick-side="SHORT">+ Short</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
+        return rows;
       }
 
-      function renderSignals() {
-        const longs = state.coins.filter(c => c.signal === 'LONG').sort((a, b) => a.rsi - b.rsi);
-        const shorts = state.coins.filter(c => c.signal === 'SHORT').sort((a, b) => b.rsi - a.rsi);
+      function renderAll() {
+        const allOpen = buildUnifiedPositions();
+        const cryptoOpen = allOpen.filter(r => r.market === 'CRYPTO');
+        const niftyOpen  = allOpen.filter(r => r.market === 'NIFTY');
 
-        document.getElementById('longSigCount').textContent = longs.length;
-        document.getElementById('shortSigCount').textContent = shorts.length;
+        const cCap = cryptoOpen.reduce((acc, r) => acc + r.capital, 0);
+        const cPnl = cryptoOpen.reduce((acc, r) => acc + r.pnl, 0);
+        const cRoe = cCap > 0 ? (cPnl / cCap) * 100 : 0;
 
-        const longEmpty = document.getElementById('longSigEmpty');
-        const longWrap = document.getElementById('longSigWrap');
-        if (longs.length === 0) {
-          longEmpty.classList.remove('hidden');
-          longWrap.classList.add('hidden');
+        const nCap = niftyOpen.reduce((acc, r) => acc + r.capital, 0);
+        const nPnl = niftyOpen.reduce((acc, r) => acc + r.pnl, 0);
+        const nRoe = nCap > 0 ? (nPnl / nCap) * 100 : 0;
+
+        const cCapInr = cCap * state.fxRate;
+        const cPnlInr = cPnl * state.fxRate;
+        const totalCapInr = cCapInr + nCap;
+        const totalOpenPnlInr = cPnlInr + nPnl;
+
+        let realizedInr = 0;
+        let wins = 0;
+        let losses = 0;
+        state.closedTrades.forEach(ct => {
+          const pnlInr = ct.market === 'CRYPTO' ? ct.pnl * state.fxRate : ct.pnl;
+          realizedInr += pnlInr;
+          if (ct.pnl >= 0) wins++;
+          else losses++;
+        });
+        const totalClosed = wins + losses;
+        const winRate = totalClosed > 0 ? (wins / totalClosed) * 100 : 0;
+
+        // KPI Cards
+        document.getElementById('kpiCryptoCap').textContent = fmtUSDT(cCap);
+        const cSub = document.getElementById('kpiCryptoPnl');
+        cSub.textContent = `Unrealized: ${fmtUSDT(cPnl)} (${fmtPct(cRoe)})`;
+        cSub.className = `kpi-sub mono ${cPnl >= 0 ? 'text-green' : 'text-red'}`;
+
+        document.getElementById('kpiNiftyCap').textContent = fmtINR(nCap);
+        const nSub = document.getElementById('kpiNiftyPnl');
+        nSub.textContent = `Unrealized: ${fmtINR(nPnl)} (${fmtPct(nRoe)})`;
+        nSub.className = `kpi-sub mono ${nPnl >= 0 ? 'text-green' : 'text-red'}`;
+
+        document.getElementById('kpiTotalInr').textContent = fmtINR(totalCapInr + totalOpenPnlInr);
+        const uSub = document.getElementById('kpiTotalUnrealizedInr');
+        uSub.textContent = `Open P&L: ${fmtINR(totalOpenPnlInr)}`;
+        uSub.className = `kpi-sub mono ${totalOpenPnlInr >= 0 ? 'text-green' : 'text-red'}`;
+
+        const rEl = document.getElementById('kpiRealizedInr');
+        rEl.textContent = fmtINR(realizedInr);
+        rEl.className = `kpi-val mono ${realizedInr > 0 ? 'text-green' : realizedInr < 0 ? 'text-red' : ''}`;
+        document.getElementById('kpiClosedCount').textContent = `${totalClosed} closed trades`;
+
+        document.getElementById('kpiWinRate').textContent = `${winRate.toFixed(1)}%`;
+        document.getElementById('kpiWinLossSplit').textContent = `${wins} Wins / ${losses} Losses`;
+
+        document.getElementById('kpiOpenCount').textContent = allOpen.length;
+        const slRiskCount = allOpen.filter(r => r.status === 'SL RISK').length;
+        const riskEl = document.getElementById('kpiRiskAlert');
+        riskEl.textContent = slRiskCount > 0 ? `⚠ ${slRiskCount} near Hard SL` : 'All positions healthy';
+        riskEl.className = `kpi-sub mono ${slRiskCount > 0 ? 'text-red' : 'text-green'}`;
+
+        // Allocation bar
+        document.getElementById('allocTotalTag').textContent = `${fmtINR(totalCapInr)} Deployed`;
+        const cPct = totalCapInr > 0 ? (cCapInr / totalCapInr) * 100 : 50;
+        const nPct = totalCapInr > 0 ? (nCap / totalCapInr) * 100 : 50;
+        document.getElementById('allocCryptoBar').style.width = `${cPct.toFixed(1)}%`;
+        document.getElementById('allocNiftyBar').style.width = `${nPct.toFixed(1)}%`;
+        document.getElementById('allocCryptoTxt').textContent = `${cPct.toFixed(1)}% (${fmtINR(cCapInr)})`;
+        document.getElementById('allocNiftyTxt').textContent = `${nPct.toFixed(1)}% (${fmtINR(nCap)})`;
+
+        // Health bars
+        const totalOpen = allOpen.length || 1;
+        const inProfit = allOpen.filter(r => r.pnl > 0).length;
+        const inLoss   = allOpen.filter(r => r.pnl < 0).length;
+        const inHold   = allOpen.filter(r => r.pnl === 0).length;
+        document.getElementById('barInProfit').style.width = `${(inProfit / totalOpen) * 100}%`;
+        document.getElementById('barInHold').style.width   = `${(inHold / totalOpen) * 100}%`;
+        document.getElementById('barInLoss').style.width   = `${(inLoss / totalOpen) * 100}%`;
+        document.getElementById('cntInProfit').textContent = inProfit;
+        document.getElementById('cntInHold').textContent   = inHold;
+        document.getElementById('cntInLoss').textContent   = inLoss;
+
+        // Badges
+        document.getElementById('tabOpenBadge').textContent = allOpen.length;
+        document.getElementById('tabClosedBadge').textContent = state.closedTrades.length;
+
+        // Render Open Table
+        const filteredOpen = allOpen.filter(r => state.marketFilter === 'ALL' || r.market === state.marketFilter);
+        const openBody = document.getElementById('openPositionsTbody');
+        const openEmpty = document.getElementById('openPositionsEmpty');
+
+        if (filteredOpen.length === 0) {
+          openBody.innerHTML = '';
+          openEmpty.classList.remove('hidden');
         } else {
-          longEmpty.classList.add('hidden');
-          longWrap.classList.remove('hidden');
-          document.getElementById('longSigTbody').innerHTML = longs.map(c => `
-            <tr class="row-long">
-              <td><strong class="mono">${c.pair}</strong></td>
-              <td class="text-right mono text-green" style="font-weight:700;">${c.rsi.toFixed(2)}</td>
-              <td class="text-right mono">${fmtPrice(c.price)}</td>
-              <td class="text-right">${vwapCellHtml(c)}</td>
-              <td class="text-right mono text-cyan">${fmtFunding(c.funding)}</td>
-              <td class="text-right mono text-green">${fmtPrice(c.price * 1.0628)}</td>
-              <td class="text-right mono text-amber">${fmtPrice(c.price * 0.9686)}</td>
-              <td class="text-right">
-                <div class="mono text-red" style="font-weight:700;">${fmtPrice(c.price * 0.98)}</div>
-                <div class="mono text-dim" style="font-size:10px;">Split: ${fmtPrice(c.price * 0.952)}</div>
-              </td>
-              <td class="text-center"><button type="button" class="btn btn-long" data-quick-coin="${c.coin}" data-quick-side="LONG">+ Long</button></td>
-            </tr>
-          `).join('');
-        }
-
-        const shortEmpty = document.getElementById('shortSigEmpty');
-        const shortWrap = document.getElementById('shortSigWrap');
-        if (shorts.length === 0) {
-          shortEmpty.classList.remove('hidden');
-          shortWrap.classList.add('hidden');
-        } else {
-          shortEmpty.classList.add('hidden');
-          shortWrap.classList.remove('hidden');
-          document.getElementById('shortSigTbody').innerHTML = shorts.map(c => `
-            <tr class="row-short">
-              <td><strong class="mono">${c.pair}</strong></td>
-              <td class="text-right mono text-red" style="font-weight:700;">${c.rsi.toFixed(2)}</td>
-              <td class="text-right mono">${fmtPrice(c.price)}</td>
-              <td class="text-right">${vwapCellHtml(c)}</td>
-              <td class="text-right mono text-amber">${fmtFunding(c.funding)}</td>
-              <td class="text-right mono text-green">${fmtPrice(c.price * 0.9372)}</td>
-              <td class="text-right mono text-amber">${fmtPrice(c.price * 1.0314)}</td>
-              <td class="text-right">
-                <div class="mono text-red" style="font-weight:700;">${fmtPrice(c.price * 1.02)}</div>
-                <div class="mono text-dim" style="font-size:10px;">Split: ${fmtPrice(c.price * 1.048)}</div>
-              </td>
-              <td class="text-center"><button type="button" class="btn btn-short" data-quick-coin="${c.coin}" data-quick-side="SHORT">+ Short</button></td>
-            </tr>
-          `).join('');
-        }
-      }
-
-      function renderTradeLog() {
-        const tbody = document.getElementById('tradeLogTbody');
-        const emptyEl = document.getElementById('tradeLogEmpty');
-
-        let totalMargin = 0;
-        let totalPnl = 0;
-        const coinMap = new Map(state.coins.map(c => [c.coin, c]));
-
-        if (state.trades.length === 0) {
-          tbody.innerHTML = '';
-          emptyEl.classList.remove('hidden');
-        } else {
-          emptyEl.classList.add('hidden');
-          tbody.innerHTML = state.trades.map(t => {
-            const c = coinMap.get(t.coin);
-            const live = c && c.price !== null ? c.price : t.entry;
-            const posSize = t.margin * t.lev;
-            const qty = t.entry > 0 ? posSize / t.entry : 0;
-            const isLong = t.side === 'LONG';
-            const isSplit = t.mode === 'split';
-
-            const pnl = isLong ? (live - t.entry) * qty : (t.entry - live) * qty;
-            const roe = t.margin > 0 ? (pnl / t.margin) * 100 : 0;
-
-            const liq = isLong
-              ? Math.max(0, t.entry * (1 - 0.95 / t.lev))
-              : t.entry * (1 + 0.95 / t.lev);
-
-            const slPct = isSplit ? 0.048 : 0.02;
-            const hardSl = isLong ? t.entry * (1 - slPct) : t.entry * (1 + slPct);
-            const beTrigger = isLong ? t.entry * 1.0314 : t.entry * 0.9686;
-
-            const tp = isLong ? t.entry * 1.0628 : t.entry * 0.9372;
-            const avg = isLong ? t.entry * 0.9686 : t.entry * 1.0314;
-
-            let status = 'HOLD';
-            let stCls = 'badge-neutral';
-            if ((isLong && live >= tp) || (!isLong && live <= tp)) {
-              status = 'BOOK PROFIT';
-              stCls = 'badge-long';
-            } else if ((isLong && live <= liq) || (!isLong && live >= liq)) {
-              status = 'LIQ RISK';
-              stCls = 'badge-short';
-            } else if ((isLong && live <= hardSl) || (!isLong && live >= hardSl)) {
-              status = 'SL HIT';
-              stCls = 'badge-short';
-            } else if ((isLong && live >= beTrigger) || (!isLong && live <= beTrigger)) {
-              status = 'MOVE SL → BE';
-              stCls = 'badge-be';
-            } else if (isSplit && ((isLong && live <= avg) || (!isLong && live >= avg))) {
-              status = 'AVG ZONE';
-              stCls = 'badge-wait';
-            }
-
-            totalMargin += t.margin;
-            totalPnl += pnl;
-            const pnlCls = pnl > 0 ? 'text-green' : pnl < 0 ? 'text-red' : 'text-muted';
-
+          openEmpty.classList.add('hidden');
+          openBody.innerHTML = filteredOpen.map(r => {
+            const isCrypto = r.market === 'CRYPTO';
+            const moneyFmt = isCrypto ? fmtUSDT : fmtINR;
+            const pxPrefix = isCrypto ? '$' : '₹';
+            const pnlCls = r.pnl > 0 ? 'text-green' : r.pnl < 0 ? 'text-red' : 'text-muted';
+            const rowCls = r.pnl > 0 ? 'row-profit' : r.pnl < 0 ? 'row-loss' : '';
             return `
-              <tr>
-                <td>
-                  <strong class="mono">${t.coin}USDT</strong>
-                  <div class="text-dim" style="font-size:10px;">${isSplit ? 'Split (-4.8% SL)' : 'Single (-2.0% SL)'}</div>
+              <tr class="${rowCls}">
+                <td><span class="badge ${isCrypto ? 'badge-crypto' : 'badge-nifty'}">${isCrypto ? 'CRYPTO' : 'NIFTY 50'}</span></td>
+                <td><strong class="mono">${r.symbol}</strong></td>
+                <td class="text-center"><span class="badge ${r.side === 'LONG' ? 'badge-long' : 'badge-short'} mono">${r.side} ${isCrypto ? r.lev + 'x' : r.qty + ' qty'}</span></td>
+                <td class="text-right mono">${pxPrefix}${fmtPrice(r.entry)}</td>
+                <td class="text-right mono">${moneyFmt(r.capital)}</td>
+                <td class="text-right mono text-cyan" style="font-weight:700;">${pxPrefix}${fmtPrice(r.live)}</td>
+                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${moneyFmt(r.pnl)}</td>
+                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtPct(r.roe)}</td>
+                <td class="text-right mono text-green">${pxPrefix}${fmtPrice(r.tp)}</td>
+                <td class="text-right mono text-red">${pxPrefix}${fmtPrice(r.slOrAvg)}</td>
+                <td class="text-center"><span class="badge ${r.stCls}">${r.status}</span></td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-long" style="padding: 3px 8px; font-size: 11px;" data-close-market="${r.market}" data-close-id="${r.id}">✓ Close</button>
+                  <button type="button" class="btn btn-del" data-del-market="${r.market}" data-del-id="${r.id}">✕</button>
                 </td>
-                <td class="text-center"><span class="badge ${isLong ? 'badge-long' : 'badge-short'} mono">${t.side} ${t.lev}x</span></td>
-                <td class="text-right mono">${fmtPrice(t.entry)}</td>
-                <td class="text-right mono">${fmtUSDT(t.margin)}</td>
-                <td class="text-right mono text-muted">${fmtUSDT(posSize)}</td>
-                <td class="text-right mono text-cyan" style="font-weight:700;">${fmtPrice(live)}</td>
-                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtUSDT(pnl)}</td>
-                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtPct(roe)}</td>
-                <td class="text-right mono text-red" style="font-weight:700;">${fmtPrice(hardSl)}</td>
-                <td class="text-right mono text-dim">${fmtPrice(liq)}</td>
-                <td class="text-right mono text-green">${fmtPrice(tp)}</td>
-                <td class="text-right mono text-amber">${fmtPrice(avg)}</td>
-                <td class="text-center"><span class="badge ${stCls}">${status}</span></td>
-                <td class="text-center"><button type="button" class="btn btn-del" data-del-trade="${t.id}">✕</button></td>
               </tr>
             `;
           }).join('');
         }
 
-        const totalRoe = totalMargin > 0 ? (totalPnl / totalMargin) * 100 : 0;
-        document.getElementById('sumMargin').textContent = fmtUSDT(totalMargin);
-        const pnlEl = document.getElementById('sumPnl');
-        const roeEl = document.getElementById('sumRoe');
-        pnlEl.textContent = fmtUSDT(totalPnl);
-        roeEl.textContent = fmtPct(totalRoe);
-        pnlEl.className = `kpi-val mono ${totalPnl > 0 ? 'text-green' : totalPnl < 0 ? 'text-red' : ''}`;
-        roeEl.className = `kpi-val mono ${totalRoe > 0 ? 'text-green' : totalRoe < 0 ? 'text-red' : ''}`;
+        // Render Closed Table
+        const filteredClosed = state.closedTrades.filter(r => state.marketFilter === 'ALL' || r.market === state.marketFilter);
+        const closedBody = document.getElementById('closedPositionsTbody');
+        const closedEmpty = document.getElementById('closedPositionsEmpty');
+        if (filteredClosed.length === 0) {
+          closedBody.innerHTML = '';
+          closedEmpty.classList.remove('hidden');
+        } else {
+          closedEmpty.classList.add('hidden');
+          closedBody.innerHTML = filteredClosed.map(r => {
+            const isCrypto = r.market === 'CRYPTO';
+            const moneyFmt = isCrypto ? fmtUSDT : fmtINR;
+            const pxPrefix = isCrypto ? '$' : '₹';
+            const pnlCls = r.pnl >= 0 ? 'text-green' : 'text-red';
+            return `
+              <tr>
+                <td class="mono text-muted">${r.closedAt}</td>
+                <td><span class="badge ${isCrypto ? 'badge-crypto' : 'badge-nifty'}">${isCrypto ? 'CRYPTO' : 'NIFTY 50'}</span></td>
+                <td><strong class="mono">${r.symbol}</strong></td>
+                <td class="text-center"><span class="badge ${r.side === 'LONG' ? 'badge-long' : 'badge-short'} mono">${r.side}</span></td>
+                <td class="text-right mono">${pxPrefix}${fmtPrice(r.entry)}</td>
+                <td class="text-right mono text-cyan">${pxPrefix}${fmtPrice(r.exitPrice)}</td>
+                <td class="text-right mono">${moneyFmt(r.capital)}</td>
+                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${moneyFmt(r.pnl)}</td>
+                <td class="text-right mono ${pnlCls}" style="font-weight:700;">${fmtPct(r.roe)}</td>
+                <td class="text-center"><button type="button" class="btn btn-del" data-del-closed="${r.id}">✕</button></td>
+              </tr>
+            `;
+          }).join('');
+        }
       }
 
-      function renderAlertHistory() {
-        document.getElementById('alertsHistoryCount').textContent = state.alertHistory.length;
-        const emptyEl = document.getElementById('alertsEmpty');
-        const wrapEl = document.getElementById('alertsWrap');
-        if (state.alertHistory.length === 0) {
-          emptyEl.classList.remove('hidden');
-          wrapEl.classList.add('hidden');
+      function populateSymbolDropdown() {
+        const mkt = document.getElementById('pMarket').value;
+        const symSel = document.getElementById('pSymbol');
+        if (mkt === 'CRYPTO') {
+          symSel.innerHTML = CRYPTO_LIST.map(c => `<option value="${c.coin}">${c.pair} — ${c.name}</option>`).join('');
+          document.getElementById('lblCapital').textContent = 'Margin (USDT)';
+          document.getElementById('pCapital').value = 100;
+          document.getElementById('pLev').disabled = false;
+          document.getElementById('pMode').disabled = false;
+        } else {
+          symSel.innerHTML = NIFTY_SYMBOLS.map(s => `<option value="${s}">${s} (NSE)</option>`).join('');
+          document.getElementById('lblCapital').textContent = 'Quantity (Shares)';
+          document.getElementById('pCapital').value = 10;
+          document.getElementById('pLev').disabled = true;
+          document.getElementById('pMode').disabled = true;
+        }
+        updateFormPreview();
+      }
+
+      function updateFormPreview() {
+        const mkt = document.getElementById('pMarket').value;
+        const entry = parseFloat(document.getElementById('pEntry').value) || 0;
+        const cap = parseFloat(document.getElementById('pCapital').value) || 0;
+        const lev = parseFloat(document.getElementById('pLev').value) || 1;
+        if (mkt === 'CRYPTO') {
+          document.getElementById('formPreviewTxt').textContent = `Pos Size: ${fmtUSDT(cap * lev)}`;
+        } else {
+          document.getElementById('formPreviewTxt').textContent = `Invested: ${fmtINR(entry * cap)}`;
+        }
+      }
+
+      function exportFullCSV() {
+        const openRows = buildUnifiedPositions();
+        if (openRows.length === 0 && state.closedTrades.length === 0) {
+          showToast('No portfolio trades to export yet.');
           return;
         }
-        emptyEl.classList.add('hidden');
-        wrapEl.classList.remove('hidden');
-        document.getElementById('alertsHistoryTbody').innerHTML = state.alertHistory.map(a => {
-          const isLong = a.side === 'LONG';
-          return `
-            <tr class="${isLong ? 'row-long' : 'row-short'}">
-              <td class="mono text-muted">${a.time}</td>
-              <td><strong class="mono">${a.pair}</strong></td>
-              <td class="text-center"><span class="badge ${isLong ? 'badge-long' : 'badge-short'}">${a.side}</span></td>
-              <td class="text-center mono text-cyan">${a.tf}</td>
-              <td class="text-right mono" style="font-weight:700;">$${fmtPrice(a.price)}</td>
-              <td class="text-right mono ${isLong ? 'text-green' : 'text-red'}" style="font-weight:700;">${Number(a.rsi).toFixed(2)}</td>
-              <td class="text-right mono text-cyan">${a.vwap !== null ? '$' + fmtPrice(a.vwap) : '—'}</td>
-              <td class="text-right mono">${fmtFunding(a.funding)}</td>
-            </tr>
-          `;
-        }).join('');
-      }
-
-      function renderAll() {
-        renderKPIs();
-        if (state.activeTab === 'screener') renderScreener();
-        else if (state.activeTab === 'signals') renderSignals();
-        else if (state.activeTab === 'tradelog') renderTradeLog();
-        else if (state.activeTab === 'alerts') renderAlertHistory();
-      }
-
-      function loadTrades() {
-        try {
-          const t = JSON.parse(localStorage.getItem(STORAGE_TRADES) || '[]');
-          if (Array.isArray(t)) state.trades = t;
-        } catch {}
-      }
-
-      function saveTrades() {
-        try { localStorage.setItem(STORAGE_TRADES, JSON.stringify(state.trades)); } catch {}
-      }
-
-      function exportCSV() {
-        if (state.trades.length === 0) { showToast('No trades to export yet.'); return; }
-        const coinMap = new Map(state.coins.map(c => [c.coin, c]));
-        const headers = ['Pair', 'Side', 'Mode', 'Leverage', 'Entry Price', 'Margin', 'Pos Size', 'Live Price', 'Hard SL', 'Unrealized PnL', 'ROE %', 'Entry RSI'];
-        const rows = state.trades.map(t => {
-          const c = coinMap.get(t.coin);
-          const live = c && c.price !== null ? c.price : t.entry;
-          const pos = t.margin * t.lev;
-          const qty = pos / t.entry;
-          const isLong = t.side === 'LONG';
-          const slPct = t.mode === 'split' ? 0.048 : 0.02;
-          const hardSl = isLong ? t.entry * (1 - slPct) : t.entry * (1 + slPct);
-          const pnl = isLong ? (live - t.entry) * qty : (t.entry - live) * qty;
-          const roe = (pnl / t.margin) * 100;
-          return [t.coin + 'USDT', t.side, t.mode || 'single', t.lev + 'x', t.entry, t.margin, pos.toFixed(2), live, hardSl.toFixed(4), pnl.toFixed(2), roe.toFixed(2) + '%', t.rsi ?? ''].join(',');
+        const headers = ['Status', 'Market', 'Symbol', 'Side', 'Entry', 'Live/Exit', 'Capital', 'PnL', 'Return %'];
+        const lines = [headers.join(',')];
+        openRows.forEach(r => {
+          lines.push(['OPEN', r.market, r.symbol, r.side, r.entry, r.live, r.capital, r.pnl.toFixed(2), r.roe.toFixed(2) + '%'].join(','));
         });
-        const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        state.closedTrades.forEach(r => {
+          lines.push(['CLOSED', r.market, r.symbol, r.side, r.entry, r.exitPrice, r.capital, r.pnl.toFixed(2), r.roe.toFixed(2) + '%'].join(','));
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `top10-futures-log-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `jarvis-portfolio-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        showToast('Futures trade log exported as CSV.', 'long');
-      }
-
-      function updatePosPreview() {
-        const m = parseFloat(document.getElementById('fMargin').value) || 0;
-        const l = parseFloat(document.getElementById('fLev').value) || 1;
-        document.getElementById('posSizePreview').textContent = `Pos Size: ${fmtUSDT(m * l)}`;
-      }
-
-      function switchTab(tab) {
-        state.activeTab = tab;
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-        document.getElementById(`tab-${tab}`).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-        renderAll();
-      }
-
-      function updateSortIndicators() {
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-          const ind = th.querySelector('.sort-ind');
-          if (!ind) return;
-          if (th.dataset.sort === state.sortKey) {
-            ind.textContent = state.sortDir === 'asc' ? ' ▲' : ' ▼';
-            ind.style.color = '#67e8f9';
-          } else {
-            ind.textContent = '';
-          }
-        });
-      }
-
-      function prefillForm(coinKey, side) {
-        const c = state.coins.find(x => x.coin === coinKey);
-        document.getElementById('fCoin').value = coinKey;
-        document.getElementById('fSide').value = side;
-        if (c && c.price !== null) document.getElementById('fEntry').value = c.price;
-        if (c && c.rsi !== null) document.getElementById('fRsi').value = c.rsi.toFixed(2);
-        updatePosPreview();
-        switchTab('tradelog');
-        document.getElementById('fMargin').focus();
-        showToast(`Pre-filled ${side} ${coinKey}USDT @ $${fmtPrice(c?.price)}`, side === 'LONG' ? 'long' : 'short');
+        showToast('Full Portfolio CSV exported!', 'long');
       }
 
       function bindEvents() {
-        document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-        document.getElementById('kpiLongCard').addEventListener('click', () => switchTab('signals'));
-        document.getElementById('kpiShortCard').addEventListener('click', () => switchTab('signals'));
-
-        document.getElementById('rescanBtn').addEventListener('click', () => {
-          showToast('Syncing candle history & funding...');
-          pushConfigUpdate({}, true);
-        });
-
-        document.querySelectorAll('.btn-tf').forEach(btn => {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const tf = btn.dataset.tf;
-            if (tf === state.timeframe) return;
-            showToast(`Switching 2s scanner to ${tf.toUpperCase()}...`, 'long');
-            pushConfigUpdate({ timeframe: tf }, true);
+            state.activeTab = btn.dataset.tab;
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`tab-${state.activeTab}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === state.activeTab));
           });
         });
 
-        let thTimer = null;
-        document.getElementById('longThInput').addEventListener('input', e => {
+        document.getElementById('marketFilter').addEventListener('change', e => {
+          state.marketFilter = e.target.value;
+          renderAll();
+        });
+
+        document.getElementById('fxRateInput').addEventListener('input', e => {
           const v = parseFloat(e.target.value);
-          if (!isNaN(v) && v >= 10 && v <= 55) {
-            clearTimeout(thTimer);
-            thTimer = setTimeout(() => {
-              pushConfigUpdate({ long_th: v }, false);
-              showToast(`Updated Long RSI < ${v} on 2s scanner`, 'long');
-            }, 500);
+          if (!isNaN(v) && v >= 50 && v <= 150) {
+            state.fxRate = v;
+            try { localStorage.setItem(STORAGE_FX_RATE, String(v)); } catch {}
+            renderAll();
           }
         });
 
-        document.getElementById('shortThInput').addEventListener('input', e => {
-          const v = parseFloat(e.target.value);
-          if (!isNaN(v) && v >= 45 && v <= 90) {
-            clearTimeout(thTimer);
-            thTimer = setTimeout(() => {
-              pushConfigUpdate({ short_th: v }, false);
-              showToast(`Updated Short RSI > ${v} on 2s scanner`, 'short');
-            }, 500);
+        document.getElementById('pMarket').addEventListener('change', () => {
+          populateSymbolDropdown();
+          if (document.getElementById('pMarket').value === 'NIFTY') fetchLiveNiftyPrices();
+        });
+
+        document.getElementById('pEntry').addEventListener('input', updateFormPreview);
+        document.getElementById('pCapital').addEventListener('input', updateFormPreview);
+        document.getElementById('pLev').addEventListener('input', updateFormPreview);
+
+        document.getElementById('fillLiveBtn').addEventListener('click', () => {
+          const mkt = document.getElementById('pMarket').value;
+          const sym = document.getElementById('pSymbol').value;
+          const px = mkt === 'CRYPTO' ? state.cryptoPrices.get(sym) : state.niftyPrices.get(sym);
+          if (px) {
+            document.getElementById('pEntry').value = px;
+            updateFormPreview();
+          } else {
+            showToast('Live price syncing — try again in 2 seconds.');
           }
         });
 
-        document.getElementById('vwapFilterToggleBtn').addEventListener('click', () => {
-          const next = !state.config.vwap_filter;
-          pushConfigUpdate({ vwap_filter: next }, false);
-          showToast(`2s Scanner VWAP Filter: ${next ? 'ON' : 'OFF'}`, next ? 'long' : 'info');
-        });
+        document.getElementById('portfolioForm').addEventListener('submit', e => {
+          e.preventDefault();
+          const mkt = document.getElementById('pMarket').value;
+          const sym = document.getElementById('pSymbol').value;
+          const side = document.getElementById('pSide').value;
+          const mode = document.getElementById('pMode').value;
+          const entry = parseFloat(document.getElementById('pEntry').value);
+          const cap = parseFloat(document.getElementById('pCapital').value);
+          const lev = Math.min(50, Math.max(1, parseInt(document.getElementById('pLev').value, 10) || 1));
+          const rsiVal = document.getElementById('pRsi').value;
 
-        document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => {
-          const next = !state.config.funding_filter;
-          pushConfigUpdate({ funding_filter: next }, false);
-          showToast(`2s Scanner Funding Filter: ${next ? 'ON' : 'OFF'}`, next ? 'long' : 'info');
-        });
-
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
-          state.soundEnabled = !state.soundEnabled;
-          const btn = document.getElementById('soundToggleBtn');
-          btn.classList.toggle('active', state.soundEnabled);
-          document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
-          document.getElementById('soundLabel').textContent = state.soundEnabled ? 'Sound: ON' : 'Sound: OFF';
-          if (state.soundEnabled) {
-            playChime(false);
-            showToast('Browser sound alerts ON', 'long');
+          if (!sym || isNaN(entry) || entry <= 0 || isNaN(cap) || cap <= 0) {
+            showToast('Enter valid Entry Price and Margin/Quantity.', 'error');
+            return;
           }
-        });
 
-        document.getElementById('tgTestBtn').addEventListener('click', async () => {
-          try {
-            const res = await fetch('/api/test-tg', { method: 'POST' });
-            const data = await res.json();
-            if (data.ok) {
-              showToast('Test alert Render se Telegram par bhej diya gaya!', 'long');
-            } else {
-              showToast(`Telegram Error: ${data.error}`, 'error');
-            }
-          } catch {
-            showToast('Request failed.', 'error');
+          if (mkt === 'CRYPTO') {
+            state.cryptoTrades.push({
+              id: 'ft_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+              coin: sym, side, mode, entry, margin: cap, lev,
+              rsi: rsiVal !== '' ? parseFloat(rsiVal) : null
+            });
+            saveCryptoTrades();
+          } else {
+            state.niftyTrades.push({
+              id: 'n50_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+              symbol: sym, side, entry, qty: Math.round(cap),
+              rsi: rsiVal !== '' ? parseFloat(rsiVal) : null
+            });
+            saveNiftyTrades();
           }
-        });
-
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-          th.addEventListener('click', () => {
-            const key = th.dataset.sort;
-            if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-            else { state.sortKey = key; state.sortDir = (key === 'price' || key === 'changePct' || key === 'vwapDiffPct') ? 'desc' : 'asc'; }
-            updateSortIndicators();
-            renderScreener();
-          });
+          renderAll();
+          showToast(`Added ${side} ${sym} to portfolio!`, side === 'LONG' ? 'long' : 'short');
         });
 
         document.addEventListener('click', e => {
-          const qBtn = e.target.closest('[data-quick-coin]');
-          if (qBtn) {
-            prefillForm(qBtn.dataset.quickCoin, qBtn.dataset.quickSide);
-            return;
-          }
-          const dBtn = e.target.closest('[data-del-trade]');
-          if (dBtn) {
-            state.trades = state.trades.filter(t => t.id !== dBtn.dataset.delTrade);
-            saveTrades();
-            renderKPIs();
-            renderTradeLog();
-            showToast('Trade removed.');
-          }
-        });
+          const closeBtn = e.target.closest('[data-close-id]');
+          if (closeBtn) {
+            const mkt = closeBtn.dataset.closeMarket;
+            const id = closeBtn.dataset.closeId;
+            const allOpen = buildUnifiedPositions();
+            const pos = allOpen.find(x => x.market === mkt && x.id === id);
+            if (!pos) return;
 
-        document.getElementById('fMargin').addEventListener('input', updatePosPreview);
-        document.getElementById('fLev').addEventListener('input', updatePosPreview);
-        document.getElementById('autoFillBtn').addEventListener('click', () => {
-          const ck = document.getElementById('fCoin').value;
-          const c = state.coins.find(x => x.coin === ck);
-          if (c && c.price !== null) {
-            document.getElementById('fEntry').value = c.price;
-            if (c.rsi !== null) document.getElementById('fRsi').value = c.rsi.toFixed(2);
-          }
-        });
+            state.closedTrades.unshift({
+              id: 'cl_' + Date.now(),
+              closedAt: new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST',
+              market: pos.market,
+              symbol: pos.symbol,
+              side: pos.side,
+              entry: pos.entry,
+              exitPrice: pos.live,
+              capital: pos.capital,
+              pnl: pos.pnl,
+              roe: pos.roe
+            });
+            saveClosedTrades();
 
-        document.getElementById('tradeForm').addEventListener('submit', e => {
-          e.preventDefault();
-          const coin = document.getElementById('fCoin').value;
-          const side = document.getElementById('fSide').value;
-          const mode = document.getElementById('fMode').value;
-          const entry = parseFloat(document.getElementById('fEntry').value);
-          const margin = parseFloat(document.getElementById('fMargin').value);
-          const lev = Math.min(50, Math.max(1, parseInt(document.getElementById('fLev').value, 10) || 1));
-          const rsiVal = document.getElementById('fRsi').value;
-
-          if (!coin || isNaN(entry) || entry <= 0 || isNaN(margin) || margin <= 0) {
-            showToast('Enter a valid Entry Price and Margin.', 'error');
+            if (mkt === 'CRYPTO') {
+              state.cryptoTrades = state.cryptoTrades.filter(t => t.id !== id);
+              saveCryptoTrades();
+            } else {
+              state.niftyTrades = state.niftyTrades.filter(t => t.id !== id);
+              saveNiftyTrades();
+            }
+            renderAll();
+            showToast(`Closed ${pos.symbol} (${fmtPct(pos.roe)})`, pos.pnl >= 0 ? 'long' : 'short');
             return;
           }
 
-          state.trades.push({
-            id: 'ft_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            coin, side, mode, entry, margin, lev,
-            rsi: rsiVal !== '' ? parseFloat(rsiVal) : null
-          });
-          saveTrades();
-          renderKPIs();
-          renderTradeLog();
-          showToast(`Logged ${side} ${coin}USDT (${lev}x • ${fmtUSDT(margin)})`, side === 'LONG' ? 'long' : 'short');
+          const delBtn = e.target.closest('[data-del-id]');
+          if (delBtn) {
+            const mkt = delBtn.dataset.delMarket;
+            const id = delBtn.dataset.delId;
+            if (mkt === 'CRYPTO') {
+              state.cryptoTrades = state.cryptoTrades.filter(t => t.id !== id);
+              saveCryptoTrades();
+            } else {
+              state.niftyTrades = state.niftyTrades.filter(t => t.id !== id);
+              saveNiftyTrades();
+            }
+            renderAll();
+            showToast('Position removed.');
+            return;
+          }
+
+          const delClosed = e.target.closest('[data-del-closed]');
+          if (delClosed) {
+            state.closedTrades = state.closedTrades.filter(t => t.id !== delClosed.dataset.delClosed);
+            saveClosedTrades();
+            renderAll();
+          }
         });
 
-        document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+        document.getElementById('exportAllCsvBtn').addEventListener('click', exportFullCSV);
       }
 
-      (function initSciFiSimulation() {
+      // =========================================================================
+      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
+      // =========================================================================
+      (function initJarvisSimulation() {
         const canvas = document.getElementById('sciFiBgCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let tick = 0;
 
-        const nodes = [];
-        const pulses = [];
-        const NODE_COUNT = 38;
-        let angle = 0;
+        const particles = [];
+        const streams = [];
+        const PARTICLE_COUNT = 54;
+        const STREAM_COUNT = 9;
 
         function resize() {
           w = window.innerWidth;
           h = window.innerHeight;
-          canvas.width = w * dpr;
-          canvas.height = h * dpr;
+          canvas.width = Math.max(1, w) * dpr;
+          canvas.height = Math.max(1, h) * dpr;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        function seedNodes() {
-          nodes.length = 0;
-          for (let i = 0; i < NODE_COUNT; i++) {
-            nodes.push({
-              x: Math.random() * (w || 1400),
+        function initEntities() {
+          particles.length = 0;
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+              x: Math.random() * (w || 1440),
               y: Math.random() * (h || 900),
-              vx: (Math.random() - 0.5) * 0.35,
-              vy: (Math.random() - 0.5) * 0.35,
-              r: 1.3 + Math.random() * 1.8,
-              cyan: Math.random() > 0.35
+              vx: (Math.random() - 0.5) * 0.42,
+              vy: (Math.random() - 0.5) * 0.42,
+              size: 1 + Math.random() * 2,
+              hue: i % 3 === 0 ? '16, 185, 129' : '56, 189, 248'
+            });
+          }
+
+          streams.length = 0;
+          for (let s = 0; s < STREAM_COUNT; s++) {
+            streams.push({
+              x: ((s + 0.5) / STREAM_COUNT) * (w || 1440),
+              y: Math.random() * (h || 900),
+              len: 45 + Math.random() * 95,
+              speed: 1.1 + Math.random() * 1.9,
+              alpha: 0.08 + Math.random() * 0.14
             });
           }
         }
 
-        function spawnPulse() {
-          if (nodes.length < 2) return;
-          const a = nodes[Math.floor(Math.random() * nodes.length)];
-          const b = nodes[Math.floor(Math.random() * nodes.length)];
-          if (a !== b && Math.hypot(a.x - b.x, a.y - b.y) < 230) {
-            pulses.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, t: 0, speed: 0.018 + Math.random() * 0.02 });
+        function drawArcReactor(cx, cy, radius, rot) {
+          ctx.save();
+          ctx.translate(cx, cy);
+
+          const glow = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 1.35);
+          glow.addColorStop(0, 'rgba(56, 189, 248, 0.14)');
+          glow.addColorStop(0.55, 'rgba(6, 182, 212, 0.05)');
+          glow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 1.35, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.rotate(rot * 0.65);
+          const segs = 12;
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2 + 0.05;
+            const a1 = ((i + 1) / segs) * Math.PI * 2 - 0.05;
+            ctx.strokeStyle = i % 3 === 0 ? 'rgba(16, 185, 129, 0.28)' : 'rgba(103, 232, 249, 0.24)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, a0, a1);
+            ctx.stroke();
           }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(-rot * 1.25);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.76, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (let k = 0; k < 24; k++) {
+            const ang = (k / 24) * Math.PI * 2;
+            const rIn = radius * (k % 2 === 0 ? 0.69 : 0.72);
+            const rOut = radius * 0.76;
+            ctx.strokeStyle = k % 6 === 0 ? 'rgba(110, 231, 183, 0.45)' : 'rgba(125, 211, 252, 0.26)';
+            ctx.lineWidth = k % 6 === 0 ? 1.8 : 1;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang) * rIn, Math.sin(ang) * rIn);
+            ctx.lineTo(Math.cos(ang) * rOut, Math.sin(ang) * rOut);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(rot * 2.4);
+          const sweepGrad = ctx.createConicGradient(0, 0);
+          sweepGrad.addColorStop(0, 'rgba(103, 232, 249, 0.28)');
+          sweepGrad.addColorStop(0.14, 'rgba(16, 185, 129, 0.08)');
+          sweepGrad.addColorStop(0.15, 'rgba(56, 189, 248, 0)');
+          sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = sweepGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.66, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.26, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.restore();
         }
 
         resize();
-        seedNodes();
-        window.addEventListener('resize', resize);
+        initEntities();
+        window.addEventListener('resize', () => {
+          resize();
+          initEntities();
+        });
 
-        function drawFrame() {
+        function renderJarvis() {
+          tick += 1;
+          const rot = tick * 0.006;
           ctx.clearRect(0, 0, w, h);
 
-          const grid = 64;
-          ctx.strokeStyle = 'rgba(6, 182, 212, 0.045)';
+          const step = 72;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          for (let x = 0; x < w; x += grid) {
+          for (let x = 0; x < w; x += step) {
             ctx.moveTo(x, 0);
             ctx.lineTo(x, h);
           }
-          for (let y = 0; y < h; y += grid) {
+          for (let y = 0; y < h; y += step) {
             ctx.moveTo(0, y);
             ctx.lineTo(w, y);
           }
           ctx.stroke();
 
-          const cx = w * 0.82;
-          const cy = h * 0.28;
-          const baseR = Math.min(w, h) * 0.24;
-          angle += 0.0045;
-
-          [baseR * 0.55, baseR * 0.85, baseR * 1.15].forEach((rad, idx) => {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(angle * (idx % 2 === 0 ? 1 : -0.7));
-            ctx.strokeStyle = idx === 1 ? 'rgba(16, 185, 129, 0.11)' : 'rgba(6, 182, 212, 0.09)';
-            ctx.lineWidth = 1.1;
-            ctx.setLineDash(idx === 0 ? [8, 10] : idx === 1 ? [22, 14] : [4, 12]);
+          for (let i = 0; i < streams.length; i++) {
+            const st = streams[i];
+            st.y += st.speed;
+            if (st.y - st.len > h) {
+              st.y = -20;
+              st.x = ((i + 0.5) / STREAM_COUNT) * w + (Math.random() - 0.5) * 40;
+            }
+            const g = ctx.createLinearGradient(st.x, st.y - st.len, st.x, st.y);
+            g.addColorStop(0, 'rgba(56, 189, 248, 0)');
+            g.addColorStop(0.75, `rgba(56, 189, 248, ${st.alpha})`);
+            g.addColorStop(1, 'rgba(110, 231, 183, 0.45)');
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
-            ctx.arc(0, 0, rad, 0, Math.PI * 2);
+            ctx.moveTo(st.x, st.y - st.len);
+            ctx.lineTo(st.x, st.y);
             ctx.stroke();
-            ctx.restore();
-          });
+          }
 
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(angle * 2.2);
-          const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, baseR * 1.15);
-          grad.addColorStop(0, 'rgba(6, 182, 212, 0.14)');
-          grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.arc(0, 0, baseR * 1.15, 0, 0.42);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
+          const mainR = Math.min(w, h) * 0.25;
+          drawArcReactor(w * 0.5, h * 0.54, mainR, rot);
+          drawArcReactor(w * 0.88, h * 0.22, Math.min(w, h) * 0.11, -rot * 1.4);
 
-          for (let i = 0; i < nodes.length; i++) {
-            const n = nodes[i];
-            n.x += n.vx;
-            n.y += n.vy;
-            if (n.x < 0 || n.x > w) n.vx *= -1;
-            if (n.y < 0 || n.y > h) n.vy *= -1;
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = w;
+            if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h;
+            if (p.y > h) p.y = 0;
 
-            for (let j = i + 1; j < nodes.length; j++) {
-              const m = nodes[j];
-              const dist = Math.hypot(n.x - m.x, n.y - m.y);
-              if (dist < 175) {
-                const alpha = (1 - dist / 175) * 0.16;
-                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha.toFixed(3)})`;
-                ctx.lineWidth = 0.8;
+            for (let j = i + 1; j < particles.length; j++) {
+              const q = particles[j];
+              const d = Math.hypot(p.x - q.x, p.y - q.y);
+              if (d < 155) {
+                const a = (1 - d / 155) * 0.16;
+                ctx.strokeStyle = `rgba(56, 189, 248, ${a.toFixed(3)})`;
+                ctx.lineWidth = 0.75;
                 ctx.beginPath();
-                ctx.moveTo(n.x, n.y);
-                ctx.lineTo(m.x, m.y);
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(q.x, q.y);
                 ctx.stroke();
               }
             }
 
-            ctx.fillStyle = n.cyan ? 'rgba(103, 232, 249, 0.45)' : 'rgba(16, 185, 129, 0.45)';
+            ctx.fillStyle = `rgba(${p.hue}, 0.65)`;
             ctx.beginPath();
-            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
           }
 
-          if (Math.random() < 0.08) spawnPulse();
-          for (let i = pulses.length - 1; i >= 0; i--) {
-            const p = pulses[i];
-            p.t += p.speed;
-            if (p.t >= 1) {
-              pulses.splice(i, 1);
-              continue;
-            }
-            const px = p.ax + (p.bx - p.ax) * p.t;
-            const py = p.ay + (p.by - p.ay) * p.t;
-            ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
-            ctx.beginPath();
-            ctx.arc(px, py, 2.1, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          const waveY = h * 0.86;
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.14)';
-          ctx.lineWidth = 1.2;
+          const baseWaveY = h * 0.91;
+          ctx.strokeStyle = 'rgba(103, 232, 249, 0.22)';
+          ctx.lineWidth = 1.4;
           ctx.beginPath();
-          for (let x = 0; x <= w * 0.42; x += 6) {
-            const y = waveY + Math.sin(x * 0.025 + angle * 5) * 14 * Math.sin(x * 0.008);
-            if (x === 0) ctx.moveTo(x, y);
+          for (let x = 20; x < w - 20; x += 8) {
+            const env = Math.sin((x / w) * Math.PI);
+            const y = baseWaveY + Math.sin(x * 0.022 + tick * 0.06) * 16 * env + Math.cos(x * 0.05 - tick * 0.04) * 5 * env;
+            if (x === 20) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
           ctx.stroke();
 
-          requestAnimationFrame(drawFrame);
+          requestAnimationFrame(renderJarvis);
         }
 
-        requestAnimationFrame(drawFrame);
+        requestAnimationFrame(renderJarvis);
       })();
 
+      async function syncLoop() {
+        loadAllStorage();
+        await Promise.all([fetchLiveCryptoPrices(), fetchLiveNiftyPrices()]);
+        document.getElementById('liveClock').textContent = new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST';
+        renderAll();
+      }
+
       function init() {
-        loadTrades();
-        updatePosPreview();
-        updateSortIndicators();
+        loadAllStorage();
+        populateSymbolDropdown();
         bindEvents();
-        fetchServerState();
-        setInterval(fetchServerState, 1500);
+        renderAll();
+        syncLoop();
+        setInterval(syncLoop, 2500);
       }
 
       if (document.readyState === 'loading') {
@@ -5070,12 +2726,1162 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     })();
   </script>
 </body>
-</html>
-"""
+</html>"""
+
+NIFTY_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nifty 50 Live RSI Screener (5m – 1Y) — J.A.R.V.I.S. Render Terminal</title>
+  <style>
+    :root {
+      --bg-main: #030914;
+      --bg-header: rgba(5, 13, 27, 0.72);
+      --bg-card: rgba(8, 18, 36, 0.34);
+      --bg-card-hover: rgba(14, 116, 144, 0.22);
+      --bg-input: rgba(6, 15, 30, 0.75);
+      --border: rgba(56, 189, 248, 0.22);
+      --border-light: rgba(103, 232, 249, 0.35);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.16);
+      --green-border: rgba(16, 185, 129, 0.42);
+      --red: #f43f5e;
+      --red-bg: rgba(244, 63, 94, 0.16);
+      --red-border: rgba(244, 63, 94, 0.42);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.16);
+      --amber-border: rgba(245, 158, 11, 0.38);
+      --cyan: #06b6d4;
+      --cyan-light: #67e8f9;
+      --cyan-bg: rgba(6, 182, 212, 0.16);
+      --cyan-border: rgba(6, 182, 212, 0.38);
+      --purple-light: #d8b4fe;
+      --purple-bg: rgba(168, 85, 247, 0.16);
+      --purple-border: rgba(168, 85, 247, 0.42);
+      --radius: 10px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { color: var(--text-main); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: var(--bg-main); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+    .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
+    .text-cyan { color: var(--cyan-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
+    .text-right { text-align: right; } .text-center { text-align: center; } .hidden { display: none !important; }
+    @keyframes flashUp { 0% { background-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; } 100% { background-color: transparent; } }
+    @keyframes flashDown { 0% { background-color: rgba(244, 63, 94, 0.35); color: #fda4af; } 100% { background-color: transparent; } }
+    .tick-up { animation: flashUp 0.7s ease-out; } .tick-down { animation: flashDown 0.7s ease-out; }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+    .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spinning { display: inline-block; animation: spin 0.8s linear infinite; }
+    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
+    html, body {
+      background-color: #030914 !important;
+      background-image:
+        radial-gradient(circle at 50% 22%, rgba(0, 212, 255, 0.11), transparent 48%),
+        radial-gradient(circle at 18% 82%, rgba(16, 185, 129, 0.08), transparent 45%),
+        radial-gradient(circle at 85% 78%, rgba(56, 189, 248, 0.09), transparent 45%) !important;
+    }
+
+    #sciFiBgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.92;
+    }
+
+    .sci-fi-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 35%, transparent 38%, rgba(2, 6, 15, 0.72) 100%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(56, 189, 248, 0.022) 0px,
+          rgba(56, 189, 248, 0.022) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+    }
+
+    .header, .main, .toast-wrap {
+      position: relative;
+      z-index: 2;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(5, 13, 27, 0.62) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.24) !important;
+      backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 24px rgba(6, 182, 212, 0.08);
+    }
+
+    .card, .kpi-card, .control-group, .live-bar, .tf-strip, .tg-panel {
+      background: rgba(8, 18, 36, 0.34) !important;
+      border-color: rgba(56, 189, 248, 0.22) !important;
+      backdrop-filter: blur(10px) saturate(135%);
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.14),
+        0 8px 28px rgba(2, 8, 20, 0.38);
+    }
+
+    .kpi-card:hover, .card:hover {
+      border-color: rgba(103, 232, 249, 0.45) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.22),
+        0 0 24px rgba(6, 182, 212, 0.14);
+    }
+
+    thead th {
+      background: rgba(6, 15, 30, 0.72) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
+      color: #7dd3fc !important;
+    }
+
+    tbody tr {
+      background: rgba(8, 18, 36, 0.18);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.11) !important;
+    }
+
+    tbody tr:hover {
+      background: rgba(14, 116, 144, 0.22) !important;
+    }
+
+    tbody tr.row-long {
+      background: rgba(16, 185, 129, 0.11) !important;
+    }
+
+    tbody tr.row-short {
+      background: rgba(244, 63, 94, 0.11) !important;
+    }
+
+    .brand-icon {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(16, 185, 129, 0.28)) !important;
+      border: 1px solid rgba(103, 232, 249, 0.75) !important;
+      box-shadow: 0 0 22px rgba(6, 182, 212, 0.55), inset 0 0 12px rgba(103, 232, 249, 0.35) !important;
+    }
+    .container { max-width: 1640px; margin: 0 auto; padding: 0 16px; }
+    .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
+    .pill-tf { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .pill-nse { background: var(--amber-bg); color: #fcd34d; border-color: var(--amber-border); font-size: 10px; }
+    .live-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
+    .status-dot.live { background: var(--green); box-shadow: 0 0 8px rgba(16, 185, 129, 0.75); }
+    .status-dot.error { background: var(--red); }
+    .live-sep { color: var(--border-light); user-select: none; }
+    .controls-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(56, 189, 248, 0.16); }
+    .tf-strip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; border: 1px solid var(--border); border-radius: 8px; padding: 2px; max-width: 100%; }
+    .control-group { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
+    .control-group label { color: var(--text-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+    select, input[type="number"], input[type="text"] { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 5px 8px; font-size: 12px; outline: none; }
+    .input-sm { width: 52px; text-align: center; padding: 3px 4px !important; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); transition: all 0.15s; white-space: nowrap; text-decoration: none; }
+    .btn:hover { background: rgba(14, 116, 144, 0.35); border-color: #67e8f9; }
+    .btn-tf { padding: 4px 8px; font-size: 11px; border: 1px solid transparent; background: transparent; color: var(--text-muted); border-radius: 6px; }
+    .btn-tf.active { background: var(--green-bg); color: #34d399; border-color: var(--green-border); }
+    .btn-sound.active { background: var(--green-bg); color: #34d399; border-color: var(--green-border); }
+    .btn-tg.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .btn-primary { background: linear-gradient(135deg, #10b981, #06b6d4); color: #04131c; border: none; font-weight: 700; }
+    .btn-long { padding: 4px 8px; font-size: 11px; background: var(--green-bg); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
+    .btn-short { padding: 4px 8px; font-size: 11px; background: var(--red-bg); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
+    .btn-del { padding: 4px 7px; font-size: 11px; background: transparent; color: var(--text-muted); border-color: transparent; }
+    .error-banner { margin-bottom: 14px; padding: 12px 16px; border-radius: var(--radius); background: rgba(244, 63, 94, 0.14); border: 1px solid var(--red-border); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: #fecdd3; }
+    .progress-bar-wrap { height: 3px; background: var(--border); width: 100%; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #06b6d4); transition: width 0.25s ease; }
+    .main { padding: 16px 0 36px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s; }
+    .kpi-card.clickable { cursor: pointer; }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+    .kpi-val { font-size: 20px; font-weight: 700; margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tabs-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+    .tabs-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tab-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; background: transparent; color: var(--text-muted); border: 1px solid transparent; cursor: pointer; }
+    .tab-btn.active { background: rgba(14, 116, 144, 0.28); color: #fff; border-color: var(--border-light); }
+    .tab-badge { padding: 1px 7px; border-radius: 99px; font-size: 11px; font-weight: 700; background: rgba(6, 182, 212, 0.24); color: var(--cyan-light); }
+    .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-wrap { overflow-x: auto; width: 100%; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
+    thead th { position: sticky; top: 0; z-index: 10; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 11px 12px; user-select: none; }
+    thead th.sortable { cursor: pointer; }
+    tbody td { padding: 10px 12px; vertical-align: middle; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+    .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+    .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; border-color: #334155; }
+    .sector-tag { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; background: rgba(56, 189, 248, 0.1); color: var(--cyan-light); border: 1px solid rgba(56, 189, 248, 0.22); }
+    .rsi-cell { display: flex; align-items: center; gap: 8px; min-width: 115px; }
+    .rsi-bar-bg { flex: 1; height: 6px; background: rgba(30, 41, 59, 0.75); border-radius: 99px; overflow: hidden; }
+    .rsi-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease; }
+    .action-btns { display: inline-flex; gap: 5px; }
+    .signals-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .signal-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .signal-header.long-hd { background: rgba(16, 185, 129, 0.11); border-bottom-color: var(--green-border); }
+    .signal-header.short-hd { background: rgba(244, 63, 94, 0.11); border-bottom-color: var(--red-border); }
+    .empty-state { padding: 36px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .form-card { padding: 16px; margin-bottom: 14px; }
+    .form-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .form-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: end; }
+    .field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+    .field input, .field select { width: 100%; padding: 7px 9px; }
+    .toast-wrap { position: fixed; bottom: 16px; right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: 340px; pointer-events: none; }
+    .toast { pointer-events: auto; padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(8, 18, 36, 0.88); backdrop-filter: blur(10px); border: 1px solid var(--border-light); color: var(--text-main); }
+    .toast.long { border-color: var(--green-border); color: #6ee7b7; }
+    .toast.short { border-color: var(--red-border); color: #fda4af; }
+    .toast.error { border-color: var(--red-border); color: #fecdd3; }
+  </style>
+</head>
+<body>
+  <canvas id="sciFiBgCanvas"></canvas>
+  <div class="sci-fi-vignette"></div>
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-icon" title="J.A.R.V.I.S. Nifty 50 Quantum Scanner">
+            <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="#04131c" stroke="#67e8f9" stroke-width="1.5"/><circle cx="18" cy="18" r="10.5" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4 3"/><path d="M9 21L14 15L18.5 19.5L27 11" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="11" r="2.5" fill="#10b981"/></svg>
+          </div>
+          <div>
+            <div class="brand-title">
+              <span>Nifty 50 Live RSI Screener</span>
+              <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
+              <span class="pill pill-nse mono">J.A.R.V.I.S. HUD</span>
+              <a href="/" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--cyan-border); color: var(--cyan-light);">🪙 Crypto Futures</a>
+              <a href="/portfolio" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--purple-border); color: var(--purple-light);">💼 Live Portfolio →</a>
+            </div>
+            <div class="brand-sub">5m to 1Y Timeframes • Dual Render TG Bot Connected • Wilder's 14 RSI • Multi-Source NSE</div>
+          </div>
+        </div>
+        <div class="live-bar">
+          <span id="liveDot" class="status-dot pulse-dot"></span>
+          <strong id="liveFeedName" class="mono">INITIALIZING...</strong>
+          <span class="live-sep">|</span>
+          <span class="text-muted">Loaded: <strong id="liveLoadedCount" class="mono text-cyan">0/50</strong></span>
+          <span class="live-sep">|</span>
+          <span class="text-muted">Scans: <strong id="liveScanCount" class="mono text-cyan">0</strong></span>
+          <span class="live-sep">|</span>
+          <span id="liveTimestamp" class="mono text-muted">--:--:-- IST</span>
+          <button id="refreshBtn" type="button" class="btn" style="padding: 3px 9px; font-size: 11px;"><span id="refreshSpin">↻</span> Refresh</button>
+        </div>
+      </div>
+      <div class="controls-bar">
+        <div class="control-group">
+          <label for="sourceSelect">Data Source:</label>
+          <select id="sourceSelect">
+            <option value="auto" selected>Auto (TV + Yahoo RSI)</option>
+            <option value="tv_direct">TradingView NSE Direct</option>
+            <option value="yahoo_allorigins">Yahoo Finance (AllOrigins)</option>
+            <option value="yahoo_codetabs">Yahoo Finance (CodeTabs)</option>
+          </select>
+        </div>
+        <div class="tf-strip">
+          <button type="button" data-tf="5m" class="btn btn-tf">5m</button>
+          <button type="button" data-tf="15m" class="btn btn-tf active">15m</button>
+          <button type="button" data-tf="30m" class="btn btn-tf">30m</button>
+          <button type="button" data-tf="1h" class="btn btn-tf">1h</button>
+          <button type="button" data-tf="2h" class="btn btn-tf">2h</button>
+          <button type="button" data-tf="4h" class="btn btn-tf">4h</button>
+          <button type="button" data-tf="1d" class="btn btn-tf">1D</button>
+          <button type="button" data-tf="1w" class="btn btn-tf">1W</button>
+          <button type="button" data-tf="1mo" class="btn btn-tf">1M</button>
+          <button type="button" data-tf="1y" class="btn btn-tf">1Y</button>
+        </div>
+        <div class="control-group">
+          <label for="intervalSelect">Auto Sync:</label>
+          <select id="intervalSelect">
+            <option value="5000">Every 5s</option>
+            <option value="10000" selected>Every 10s</option>
+            <option value="30000">Every 30s</option>
+            <option value="60000">Every 60s</option>
+            <option value="0">Manual</option>
+          </select>
+        </div>
+        <div class="control-group"><label for="longThInput" class="text-green">Long RSI &lt;</label><input id="longThInput" type="number" min="10" max="55" value="35" class="input-sm mono text-green" /></div>
+        <div class="control-group"><label for="shortThInput" class="text-red">Short RSI &gt;</label><input id="shortThInput" type="number" min="45" max="90" value="70" class="input-sm mono text-red" /></div>
+        <button id="soundToggleBtn" type="button" class="btn btn-sound"><span id="soundIcon">🔇</span><span id="soundLabel">Sound: OFF</span></button>
+        <button id="tgToggleBtn" type="button" class="btn btn-tg active"><span>✈️</span><span id="tgLabel">Render TG Alert: ON</span></button>
+        <button id="tgTestBtn" type="button" class="btn">🧪 Test TG</button>
+      </div>
+    </div>
+    <div class="progress-bar-wrap"><div id="loadProgressBar" class="progress-bar-fill"></div></div>
+  </header>
+  <main class="main container">
+    <div id="networkErrorBanner" class="error-banner hidden">
+      <div><strong>Unable to reach live NSE feeds right now.</strong><span id="networkErrorDetail"></span></div>
+      <button id="testConnBtn" type="button" class="btn btn-primary" style="padding: 6px 12px;">Retry Live Scan</button>
+    </div>
+    <section class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-top"><span>NSE Status &amp; Sync</span><span id="kpiTfTag" class="mono text-cyan">15M</span></div><div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div><div id="kpiFeedDetail" class="kpi-sub">Connecting...</div></div>
+      <div id="kpiLongCard" class="kpi-card clickable"><div class="kpi-top"><span>Long Signals (&lt; <span class="long-th-txt">35</span>)</span><span class="text-green">View →</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 50</span></div><div class="kpi-sub">Oversold dip setups</div></div>
+      <div id="kpiShortCard" class="kpi-card clickable"><div class="kpi-top"><span>Short Signals (&gt; <span class="short-th-txt">70</span>)</span><span class="text-red">View →</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 50</span></div><div class="kpi-sub">Overbought reversal setups</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Most Oversold</span><span class="text-green mono">Lowest RSI</span></div><div class="kpi-val"><span id="kpiOversoldSym" style="font-size: 16px;">--</span><span id="kpiOversoldRsi" class="mono text-green">--</span></div><div id="kpiOversoldPrice" class="kpi-sub mono">LTP: --</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Most Overbought</span><span class="text-red mono">Highest RSI</span></div><div class="kpi-val"><span id="kpiOverboughtSym" style="font-size: 16px;">--</span><span id="kpiOverboughtRsi" class="mono text-red">--</span></div><div id="kpiOverboughtPrice" class="kpi-sub mono">LTP: --</div></div>
+    </section>
+    <div class="tabs-row">
+      <div class="tabs-list">
+        <button type="button" data-tab="screener" class="tab-btn active">Nifty 50 Screener</button>
+        <button type="button" data-tab="signals" class="tab-btn"><span>Active Signals (LONG &amp; SHORT)</span><span id="tabSignalsBadge" class="tab-badge mono">0</span></button>
+        <button type="button" data-tab="tradelog" class="tab-btn"><span>Equity Trade Log</span><span id="tabTradesBadge" class="tab-badge mono">0</span></button>
+      </div>
+      <div class="filter-row">
+        <input id="searchInput" type="text" placeholder="Search symbol / company..." style="width: 185px;" />
+        <select id="sectorFilter"><option value="ALL">All Sectors</option></select>
+        <select id="signalFilter"><option value="ALL">All Signals</option><option value="LONG">LONG Only</option><option value="SHORT">SHORT Only</option><option value="WAIT">WAIT Only</option></select>
+      </div>
+    </div>
+    <section id="tab-screener" class="tab-panel"><div class="card"><div class="table-wrap"><table><thead><tr><th class="sortable" data-sort="sr"># <span class="sort-ind"></span></th><th class="sortable" data-sort="symbol">Stock / Company <span class="sort-ind"></span></th><th class="sortable" data-sort="sector">Sector <span class="sort-ind"></span></th><th class="sortable text-right" data-sort="price">Live LTP (₹) <span class="sort-ind"></span></th><th class="sortable text-right" data-sort="prevClose">Prev Close <span class="sort-ind"></span></th><th class="sortable text-right" data-sort="changePct">Day Chg % <span class="sort-ind"></span></th><th class="sortable" data-sort="rsi">14-Period RSI <span class="sort-ind"></span></th><th class="sortable text-center" data-sort="signal">Signal <span class="sort-ind"></span></th><th class="sortable text-center" data-sort="rsiRank">RSI Rank <span class="sort-ind"></span></th><th class="sortable text-right" data-sort="target">Target +6.28% (2π) <span class="sort-ind"></span></th><th class="sortable text-right" data-sort="nextAvg">Next Avg -3.14% (π) <span class="sort-ind"></span></th><th class="text-center">Quick Trade</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="12" class="empty-state">Fetching live Nifty 50 prices &amp; RSI...</td></tr></tbody></table></div></div></section>
+    <section id="tab-signals" class="tab-panel hidden"><div class="signals-grid"><div class="card"><div class="signal-header long-hd"><div><strong class="text-green">LONG Signals (RSI &lt; <span class="long-th-txt">35</span>)</strong></div><span id="longSigCount" class="badge badge-long mono">0</span></div><div id="longSigEmpty" class="empty-state hidden">No Nifty 50 stocks below Long RSI threshold.</div><div id="longSigWrap" class="table-wrap"><table><thead><tr><th>Stock</th><th class="text-right">RSI</th><th class="text-right">LTP (₹)</th><th class="text-right">TP (+6.28%)</th><th class="text-right">Avg (-3.14%)</th><th class="text-center">Action</th></tr></thead><tbody id="longSigTbody"></tbody></table></div></div><div class="card"><div class="signal-header short-hd"><div><strong class="text-red">SHORT Signals (RSI &gt; <span class="short-th-txt">70</span>)</strong></div><span id="shortSigCount" class="badge badge-short mono">0</span></div><div id="shortSigEmpty" class="empty-state hidden">No Nifty 50 stocks above Short RSI threshold.</div><div id="shortSigWrap" class="table-wrap"><table><thead><tr><th>Stock</th><th class="text-right">RSI</th><th class="text-right">LTP (₹)</th><th class="text-right">TP (-6.28%)</th><th class="text-right">Avg (+3.14%)</th><th class="text-center">Action</th></tr></thead><tbody id="shortSigTbody"></tbody></table></div></div></div></section>
+    <section id="tab-tradelog" class="tab-panel hidden"><div class="summary-grid"><div class="kpi-card"><div class="kpi-top"><span>Total Capital Deployed</span></div><div id="sumCapital" class="kpi-val mono">₹0.00</div></div><div class="kpi-card"><div class="kpi-top"><span>Unrealized P&amp;L</span></div><div id="sumPnl" class="kpi-val mono">₹0.00</div></div><div class="kpi-card" style="flex-direction: row; align-items: center; justify-content: space-between;"><div><div class="kpi-top"><span>Overall Return %</span></div><div id="sumRoe" class="kpi-val mono">0.00%</div></div><button id="exportCsvBtn" type="button" class="btn btn-long" style="padding: 7px 12px; font-size: 12px;">⬇ Export CSV</button></div></div><form id="tradeForm" class="card form-card"><div class="form-header"><strong>Add NSE Equity / Intraday Trade</strong><div style="display: flex; align-items: center; gap: 10px;"><span id="posSizePreview" class="mono text-muted" style="font-size: 12px;">Value: ₹0.00</span><button id="autoFillBtn" type="button" class="btn" style="padding: 4px 9px; font-size: 11px;">Fill Live LTP</button></div></div><div class="form-grid"><div class="field"><label for="fSym">Stock</label><select id="fSym" required></select></div><div class="field"><label for="fSide">Side</label><select id="fSide" required><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></div><div class="field"><label for="fEntry">Entry Price (₹)</label><input id="fEntry" type="number" step="any" min="0" required placeholder="0.00" class="mono" /></div><div class="field"><label for="fQty">Quantity (Shares)</label><input id="fQty" type="number" step="1" min="1" required value="10" class="mono" /></div><div class="field"><label for="fRsi">Entry RSI</label><input id="fRsi" type="number" step="0.01" min="0" max="100" placeholder="32.50" class="mono" /></div><div class="field"><button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px;">+ Add Trade</button></div></div></form><div class="card"><div class="table-wrap"><table><thead><tr><th>Stock</th><th class="text-center">Side</th><th class="text-right">Qty</th><th class="text-right">Entry (₹)</th><th class="text-right">Invested</th><th class="text-right">Live LTP</th><th class="text-right">Unrealized P&amp;L</th><th class="text-right">Return %</th><th class="text-right">TP (±6.28%)</th><th class="text-right">Avg (±3.14%)</th><th class="text-center">Status</th><th class="text-center">Del</th></tr></thead><tbody id="tradeLogTbody"></tbody></table></div><div id="tradeLogEmpty" class="empty-state hidden">No equity trades logged yet.</div></div></section>
+  </main>
+  <div id="toastWrap" class="toast-wrap"></div>
+  <script>
+    (() => {
+      'use strict';
+      const STOCKS = [
+        { sr: 1, symbol: 'RELIANCE', tv: 'RELIANCE', name: 'Reliance Industries', sector: 'Energy' },
+        { sr: 2, symbol: 'HDFCBANK', tv: 'HDFCBANK', name: 'HDFC Bank', sector: 'Banking' },
+        { sr: 3, symbol: 'TCS', tv: 'TCS', name: 'Tata Consultancy Svcs', sector: 'IT' },
+        { sr: 4, symbol: 'BHARTIARTL', tv: 'BHARTIARTL', name: 'Bharti Airtel', sector: 'Telecom' },
+        { sr: 5, symbol: 'ICICIBANK', tv: 'ICICIBANK', name: 'ICICI Bank', sector: 'Banking' },
+        { sr: 6, symbol: 'SBIN', tv: 'SBIN', name: 'State Bank of India', sector: 'Banking' },
+        { sr: 7, symbol: 'INFY', tv: 'INFY', name: 'Infosys', sector: 'IT' },
+        { sr: 8, symbol: 'BAJFINANCE', tv: 'BAJFINANCE', name: 'Bajaj Finance', sector: 'Finance' },
+        { sr: 9, symbol: 'HINDUNILVR', tv: 'HINDUNILVR', name: 'Hindustan Unilever', sector: 'FMCG' },
+        { sr: 10, symbol: 'ITC', tv: 'ITC', name: 'ITC Ltd', sector: 'FMCG' },
+        { sr: 11, symbol: 'LT', tv: 'LT', name: 'Larsen & Toubro', sector: 'Infra' },
+        { sr: 12, symbol: 'HCLTECH', tv: 'HCLTECH', name: 'HCL Technologies', sector: 'IT' },
+        { sr: 13, symbol: 'KOTAKBANK', tv: 'KOTAKBANK', name: 'Kotak Mahindra Bank', sector: 'Banking' },
+        { sr: 14, symbol: 'SUNPHARMA', tv: 'SUNPHARMA', name: 'Sun Pharma', sector: 'Pharma' },
+        { sr: 15, symbol: 'MARUTI', tv: 'MARUTI', name: 'Maruti Suzuki', sector: 'Auto' },
+        { sr: 16, symbol: 'M&M', tv: 'M_M', name: 'Mahindra & Mahindra', sector: 'Auto' },
+        { sr: 17, symbol: 'AXISBANK', tv: 'AXISBANK', name: 'Axis Bank', sector: 'Banking' },
+        { sr: 18, symbol: 'ULTRACEMCO', tv: 'ULTRACEMCO', name: 'UltraTech Cement', sector: 'Materials' },
+        { sr: 19, symbol: 'NTPC', tv: 'NTPC', name: 'NTPC Ltd', sector: 'Energy' },
+        { sr: 20, symbol: 'BAJAJFINSV', tv: 'BAJAJFINSV', name: 'Bajaj Finserv', sector: 'Finance' },
+        { sr: 21, symbol: 'TITAN', tv: 'TITAN', name: 'Titan Company', sector: 'Consumer' },
+        { sr: 22, symbol: 'ADANIPORTS', tv: 'ADANIPORTS', name: 'Adani Ports & SEZ', sector: 'Infra' },
+        { sr: 23, symbol: 'ONGC', tv: 'ONGC', name: 'ONGC', sector: 'Energy' },
+        { sr: 24, symbol: 'BEL', tv: 'BEL', name: 'Bharat Electronics', sector: 'Defence' },
+        { sr: 25, symbol: 'ADANIENT', tv: 'ADANIENT', name: 'Adani Enterprises', sector: 'Metals' },
+        { sr: 26, symbol: 'POWERGRID', tv: 'POWERGRID', name: 'Power Grid Corp', sector: 'Energy' },
+        { sr: 27, symbol: 'WIPRO', tv: 'WIPRO', name: 'Wipro', sector: 'IT' },
+        { sr: 28, symbol: 'JSWSTEEL', tv: 'JSWSTEEL', name: 'JSW Steel', sector: 'Metals' },
+        { sr: 29, symbol: 'TATAMOTORS', tv: 'TATAMOTORS', name: 'Tata Motors', sector: 'Auto' },
+        { sr: 30, symbol: 'COALINDIA', tv: 'COALINDIA', name: 'Coal India', sector: 'Energy' },
+        { sr: 31, symbol: 'ASIANPAINT', tv: 'ASIANPAINT', name: 'Asian Paints', sector: 'Consumer' },
+        { sr: 32, symbol: 'BAJAJ-AUTO', tv: 'BAJAJ_AUTO', name: 'Bajaj Auto', sector: 'Auto' },
+        { sr: 33, symbol: 'NESTLEIND', tv: 'NESTLEIND', name: 'Nestle India', sector: 'FMCG' },
+        { sr: 34, symbol: 'TRENT', tv: 'TRENT', name: 'Trent Ltd', sector: 'Consumer' },
+        { sr: 35, symbol: 'GRASIM', tv: 'GRASIM', name: 'Grasim Industries', sector: 'Materials' },
+        { sr: 36, symbol: 'EICHERMOT', tv: 'EICHERMOT', name: 'Eicher Motors', sector: 'Auto' },
+        { sr: 37, symbol: 'SBILIFE', tv: 'SBILIFE', name: 'SBI Life Insurance', sector: 'Finance' },
+        { sr: 38, symbol: 'TECHM', tv: 'TECHM', name: 'Tech Mahindra', sector: 'IT' },
+        { sr: 39, symbol: 'HINDALCO', tv: 'HINDALCO', name: 'Hindalco Industries', sector: 'Metals' },
+        { sr: 40, symbol: 'TATASTEEL', tv: 'TATASTEEL', name: 'Tata Steel', sector: 'Metals' },
+        { sr: 41, symbol: 'HDFCLIFE', tv: 'HDFCLIFE', name: 'HDFC Life Insurance', sector: 'Finance' },
+        { sr: 42, symbol: 'SHRIRAMFIN', tv: 'SHRIRAMFIN', name: 'Shriram Finance', sector: 'Finance' },
+        { sr: 43, symbol: 'CIPLA', tv: 'CIPLA', name: 'Cipla', sector: 'Pharma' },
+        { sr: 44, symbol: 'APOLLOHOSP', tv: 'APOLLOHOSP', name: 'Apollo Hospitals', sector: 'Pharma' },
+        { sr: 45, symbol: 'DRREDDY', tv: 'DRREDDY', name: "Dr. Reddy's Labs", sector: 'Pharma' },
+        { sr: 46, symbol: 'TATACONSUM', tv: 'TATACONSUM', name: 'Tata Consumer Products', sector: 'FMCG' },
+        { sr: 47, symbol: 'HEROMOTOCO', tv: 'HEROMOTOCO', name: 'Hero MotoCorp', sector: 'Auto' },
+        { sr: 48, symbol: 'INDUSINDBK', tv: 'INDUSINDBK', name: 'IndusInd Bank', sector: 'Banking' },
+        { sr: 49, symbol: 'JIOFIN', tv: 'JIOFIN', name: 'Jio Financial Services', sector: 'Finance' },
+        { sr: 50, symbol: 'BRITANNIA', tv: 'BRITANNIA', name: 'Britannia Industries', sector: 'FMCG' }
+      ];
+      const TV_TO_SYM = new Map(STOCKS.map(s => [`NSE:${s.tv}`, s.symbol]));
+      const TIMEFRAMES = [
+        { key: '5m', label: '5m', tvCol: 'RSI|5', yahoo: { interval: '5m', range: '5d' } },
+        { key: '15m', label: '15m', tvCol: 'RSI|15', yahoo: { interval: '15m', range: '5d' } },
+        { key: '30m', label: '30m', tvCol: 'RSI|30', yahoo: { interval: '30m', range: '10d' } },
+        { key: '1h', label: '1h', tvCol: 'RSI|60', yahoo: { interval: '60m', range: '1mo' } },
+        { key: '2h', label: '2h', tvCol: 'RSI|120', yahoo: { interval: '60m', range: '2mo' } },
+        { key: '4h', label: '4h', tvCol: 'RSI|240', yahoo: { interval: '60m', range: '3mo' } },
+        { key: '1d', label: '1D', tvCol: 'RSI', yahoo: { interval: '1d', range: '6mo' } },
+        { key: '1w', label: '1W', tvCol: 'RSI|1W', yahoo: { interval: '1wk', range: '2y' } },
+        { key: '1mo', label: '1M', tvCol: 'RSI|1M', yahoo: { interval: '1mo', range: '5y' } },
+        { key: '1y', label: '1Y', tvCol: null, yahoo: { interval: '1mo', range: '10y' } }
+      ];
+      const TF_MAP = new Map(TIMEFRAMES.map(t => [t.key, t]));
+      function createEmptyRsiMap() { return { '5m': null, '15m': null, '30m': null, '1h': null, '2h': null, '4h': null, '1d': null, '1w': null, '1mo': null, '1y': null }; }
+      const RSI_PERIOD = 14, STORAGE_TRADES = 'nifty50_rsi_v4_trades', STORAGE_PREFS = 'nifty50_rsi_v4_prefs';
+      const state = { sourceMode: 'auto', activeSource: 'tv_direct', timeframe: '15m', pollIntervalMs: 10000, longTh: 35, shortTh: 70, soundEnabled: false, tgEnabled: true, tgConfiguredOnRender: false, activeTab: 'screener', sortKey: 'rsi', sortDir: 'asc', searchQuery: '', sectorFilter: 'ALL', signalFilter: 'ALL', scans: 0, lastUpdateDate: null, sessionId: 0, isScanning: false, pollTimer: null, audioCtx: null, cooldowns: new Map(), stocks: new Map(), trades: [] };
+      STOCKS.forEach(s => state.stocks.set(s.symbol, { ...s, price: null, prevClose: null, changePct: null, rsiMap: createEmptyRsiMap(), rsi: null, rsiRank: null, flash: null, loaded: false }));
+      function computeWilderRSI(closes, period = RSI_PERIOD) { if (!closes || closes.length <= period) return null; let gains = 0, losses = 0; for (let i = 1; i <= period; i++) { const d = closes[i] - closes[i - 1]; if (d >= 0) gains += d; else losses -= d; } let avgGain = gains / period, avgLoss = losses / period; for (let i = period + 1; i < closes.length; i++) { const d = closes[i] - closes[i - 1]; avgGain = (avgGain * (period - 1) + (d > 0 ? d : 0)) / period; avgLoss = (avgLoss * (period - 1) + (d < 0 ? -d : 0)) / period; } if (avgLoss === 0) return 100; return Math.round((100 - 100 / (1 + avgGain / avgLoss)) * 100) / 100; }
+      const tfDisplayLabel = k => (TF_MAP.get(k)?.label || k).toUpperCase();
+      const fmtINR = v => (v == null || isNaN(v)) ? '--' : (v < 0 ? '-₹' : '₹') + Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtPrice = v => (v == null || isNaN(v)) ? '--' : v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtPct = v => (v == null || isNaN(v)) ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+      const fmtIST = d => d ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d) + ' IST' : '--:--:-- IST';
+      const getSignal = rsi => (rsi == null || isNaN(rsi)) ? { label: 'LOAD', cls: 'badge-neutral', bar: '#475569' } : rsi < state.longTh ? { label: 'LONG', cls: 'badge-long', bar: '#10b981' } : rsi > state.shortTh ? { label: 'SHORT', cls: 'badge-short', bar: '#f43f5e' } : { label: 'WAIT', cls: 'badge-wait', bar: '#06b6d4' };
+      function fetchWithTimeout(url, opts = {}, ms = 8000) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t)); }
+      function showToast(msg, type = 'info') { const w = document.getElementById('toastWrap'); const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = msg; w.appendChild(el); setTimeout(() => el.remove(), 3500); }
+      async function triggerRenderTelegramSignal(s, side) { if (!state.tgEnabled) return; try { await fetch('/api/nifty-alert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol: s.symbol, name: s.name, sector: s.sector, side, timeframe: tfDisplayLabel(state.timeframe), price: s.price, changePct: s.changePct, rsi: s.rsi }) }); } catch {} }
+      function checkRsiAlerts(s, oldRsi, init) { if (init || s.rsi == null || oldRsi == null) return; if (oldRsi >= state.longTh && s.rsi < state.longTh) { showToast(`LONG: ${s.symbol} RSI ${s.rsi.toFixed(2)}`, 'long'); triggerRenderTelegramSignal(s, 'LONG'); } else if (oldRsi <= state.shortTh && s.rsi > state.shortTh) { showToast(`SHORT: ${s.symbol} RSI ${s.rsi.toFixed(2)}`, 'short'); triggerRenderTelegramSignal(s, 'SHORT'); } }
+      async function fetchTradingViewDirect(sid, isInitial) { const tvCols = TIMEFRAMES.filter(t => t.tvCol).map(t => t.tvCol); const res = await fetchWithTimeout('https://scanner.tradingview.com/india/scan', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ symbols: { tickers: STOCKS.map(s => `NSE:${s.tv}`), query: { types: [] } }, columns: ['name', 'close', 'change', 'change_abs', ...tvCols] }) }, 9000); if (!res.ok) throw new Error('TV HTTP ' + res.status); const json = await res.json(); if (sid !== state.sessionId || !json?.data?.length) throw new Error('Empty TV'); json.data.forEach(row => { const sym = TV_TO_SYM.get(row.s); const s = state.stocks.get(sym); const d = row.d; if (!s || !Array.isArray(d)) return; const oldRsi = s.rsi; s.price = typeof d[1] === 'number' ? d[1] : null; s.changePct = typeof d[2] === 'number' ? d[2] : null; s.prevClose = (s.price != null && typeof d[3] === 'number') ? s.price - d[3] : null; const m = createEmptyRsiMap(); TIMEFRAMES.forEach((tf, i) => { if (tf.tvCol && typeof d[4 + i] === 'number') m[tf.key] = Math.round(d[4 + i] * 100) / 100; }); s.rsiMap = m; s.rsi = s.rsiMap[state.timeframe]; s.loaded = s.price != null; checkRsiAlerts(s, oldRsi, isInitial); }); }
+      async function runScan(isInitial = false) { if (state.isScanning && !isInitial) return; const sid = isInitial ? ++state.sessionId : state.sessionId; state.isScanning = true; try { await fetchTradingViewDirect(sid, isInitial); state.scans++; state.lastUpdateDate = new Date(); document.getElementById('liveDot').className = 'status-dot live pulse-dot'; document.getElementById('liveFeedName').textContent = `LIVE • TV NSE ${tfDisplayLabel(state.timeframe)}`; renderAll(); } catch (e) { document.getElementById('liveDot').className = 'status-dot error'; document.getElementById('liveFeedName').textContent = 'RECONNECTING...'; } finally { state.isScanning = false; } }
+      function renderAll() { const loaded = Array.from(state.stocks.values()).filter(s => s.loaded && s.rsi != null); loaded.slice().sort((a, b) => a.rsi - b.rsi).forEach((s, i) => s.rsiRank = i + 1); const longs = loaded.filter(s => s.rsi < state.longTh); const shorts = loaded.filter(s => s.rsi > state.shortTh); document.getElementById('liveLoadedCount').textContent = `${loaded.length}/50`; document.getElementById('liveScanCount').textContent = state.scans; const ist = fmtIST(state.lastUpdateDate); document.getElementById('liveTimestamp').textContent = ist; document.getElementById('kpiSyncTime').textContent = ist; document.getElementById('kpiLongCount').textContent = longs.length; document.getElementById('kpiShortCount').textContent = shorts.length; document.getElementById('tabSignalsBadge').textContent = longs.length + shorts.length; document.getElementById('tabTradesBadge').textContent = state.trades.length; if (loaded.length) { const srt = loaded.slice().sort((a, b) => a.rsi - b.rsi); document.getElementById('kpiOversoldSym').textContent = srt[0].symbol; document.getElementById('kpiOversoldRsi').textContent = srt[0].rsi.toFixed(2); document.getElementById('kpiOversoldPrice').textContent = `LTP: ₹${fmtPrice(srt[0].price)}`; const hi = srt[srt.length - 1]; document.getElementById('kpiOverboughtSym').textContent = hi.symbol; document.getElementById('kpiOverboughtRsi').textContent = hi.rsi.toFixed(2); document.getElementById('kpiOverboughtPrice').textContent = `LTP: ₹${fmtPrice(hi.price)}`; } const q = state.searchQuery.trim().toLowerCase(); let list = Array.from(state.stocks.values()).filter(s => (!q || s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)) && (state.sectorFilter === 'ALL' || s.sector === state.sectorFilter) && (state.signalFilter === 'ALL' || getSignal(s.rsi).label === state.signalFilter)); list.sort((a, b) => (a.rsi ?? 999) - (b.rsi ?? 999)); document.getElementById('screenerTbody').innerHTML = list.map(s => { const sig = getSignal(s.rsi); return `<tr class="${sig.label === 'LONG' ? 'row-long' : sig.label === 'SHORT' ? 'row-short' : ''}"><td class="mono text-dim">#${s.sr}</td><td><strong class="mono">${s.symbol}</strong><div class="text-muted" style="font-size:11px;">${s.name}</div></td><td><span class="sector-tag">${s.sector}</span></td><td class="text-right mono" style="font-weight:700;">${fmtPrice(s.price)}</td><td class="text-right mono text-muted">${fmtPrice(s.prevClose)}</td><td class="text-right mono ${s.changePct >= 0 ? 'text-green' : 'text-red'}">${fmtPct(s.changePct)}</td><td class="mono">${s.rsi != null ? s.rsi.toFixed(2) : '--'}</td><td class="text-center"><span class="badge ${sig.cls}">${sig.label}</span></td><td class="text-center mono">${s.rsiRank ? '#' + s.rsiRank : '--'}</td><td class="text-right mono text-green">${fmtPrice(s.price ? s.price * 1.0628 : null)}</td><td class="text-right mono text-amber">${fmtPrice(s.price ? s.price * 0.9686 : null)}</td><td class="text-center"><button type="button" class="btn btn-long" data-quick-sym="${s.symbol}" data-quick-side="LONG">+ Long</button> <button type="button" class="btn btn-short" data-quick-sym="${s.symbol}" data-quick-side="SHORT">+ Short</button></td></tr>`; }).join(''); }
+      // =========================================================================
+      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
+      // =========================================================================
+      (function initJarvisSimulation() {
+        const canvas = document.getElementById('sciFiBgCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let tick = 0;
+
+        const particles = [];
+        const streams = [];
+        const PARTICLE_COUNT = 54;
+        const STREAM_COUNT = 9;
+
+        function resize() {
+          w = window.innerWidth;
+          h = window.innerHeight;
+          canvas.width = Math.max(1, w) * dpr;
+          canvas.height = Math.max(1, h) * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initEntities() {
+          particles.length = 0;
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+              x: Math.random() * (w || 1440),
+              y: Math.random() * (h || 900),
+              vx: (Math.random() - 0.5) * 0.42,
+              vy: (Math.random() - 0.5) * 0.42,
+              size: 1 + Math.random() * 2,
+              hue: i % 3 === 0 ? '16, 185, 129' : '56, 189, 248'
+            });
+          }
+
+          streams.length = 0;
+          for (let s = 0; s < STREAM_COUNT; s++) {
+            streams.push({
+              x: ((s + 0.5) / STREAM_COUNT) * (w || 1440),
+              y: Math.random() * (h || 900),
+              len: 45 + Math.random() * 95,
+              speed: 1.1 + Math.random() * 1.9,
+              alpha: 0.08 + Math.random() * 0.14
+            });
+          }
+        }
+
+        function drawArcReactor(cx, cy, radius, rot) {
+          ctx.save();
+          ctx.translate(cx, cy);
+
+          const glow = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 1.35);
+          glow.addColorStop(0, 'rgba(56, 189, 248, 0.14)');
+          glow.addColorStop(0.55, 'rgba(6, 182, 212, 0.05)');
+          glow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 1.35, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.rotate(rot * 0.65);
+          const segs = 12;
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2 + 0.05;
+            const a1 = ((i + 1) / segs) * Math.PI * 2 - 0.05;
+            ctx.strokeStyle = i % 3 === 0 ? 'rgba(16, 185, 129, 0.28)' : 'rgba(103, 232, 249, 0.24)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, a0, a1);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(-rot * 1.25);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.76, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (let k = 0; k < 24; k++) {
+            const ang = (k / 24) * Math.PI * 2;
+            const rIn = radius * (k % 2 === 0 ? 0.69 : 0.72);
+            const rOut = radius * 0.76;
+            ctx.strokeStyle = k % 6 === 0 ? 'rgba(110, 231, 183, 0.45)' : 'rgba(125, 211, 252, 0.26)';
+            ctx.lineWidth = k % 6 === 0 ? 1.8 : 1;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang) * rIn, Math.sin(ang) * rIn);
+            ctx.lineTo(Math.cos(ang) * rOut, Math.sin(ang) * rOut);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(rot * 2.4);
+          const sweepGrad = ctx.createConicGradient(0, 0);
+          sweepGrad.addColorStop(0, 'rgba(103, 232, 249, 0.28)');
+          sweepGrad.addColorStop(0.14, 'rgba(16, 185, 129, 0.08)');
+          sweepGrad.addColorStop(0.15, 'rgba(56, 189, 248, 0)');
+          sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = sweepGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.66, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.26, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        resize();
+        initEntities();
+        window.addEventListener('resize', () => {
+          resize();
+          initEntities();
+        });
+
+        function renderJarvis() {
+          tick += 1;
+          const rot = tick * 0.006;
+          ctx.clearRect(0, 0, w, h);
+
+          const step = 72;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let x = 0; x < w; x += step) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+          }
+          for (let y = 0; y < h; y += step) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+          }
+          ctx.stroke();
+
+          for (let i = 0; i < streams.length; i++) {
+            const st = streams[i];
+            st.y += st.speed;
+            if (st.y - st.len > h) {
+              st.y = -20;
+              st.x = ((i + 0.5) / STREAM_COUNT) * w + (Math.random() - 0.5) * 40;
+            }
+            const g = ctx.createLinearGradient(st.x, st.y - st.len, st.x, st.y);
+            g.addColorStop(0, 'rgba(56, 189, 248, 0)');
+            g.addColorStop(0.75, `rgba(56, 189, 248, ${st.alpha})`);
+            g.addColorStop(1, 'rgba(110, 231, 183, 0.45)');
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(st.x, st.y - st.len);
+            ctx.lineTo(st.x, st.y);
+            ctx.stroke();
+          }
+
+          const mainR = Math.min(w, h) * 0.25;
+          drawArcReactor(w * 0.5, h * 0.54, mainR, rot);
+          drawArcReactor(w * 0.88, h * 0.22, Math.min(w, h) * 0.11, -rot * 1.4);
+
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = w;
+            if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h;
+            if (p.y > h) p.y = 0;
+
+            for (let j = i + 1; j < particles.length; j++) {
+              const q = particles[j];
+              const d = Math.hypot(p.x - q.x, p.y - q.y);
+              if (d < 155) {
+                const a = (1 - d / 155) * 0.16;
+                ctx.strokeStyle = `rgba(56, 189, 248, ${a.toFixed(3)})`;
+                ctx.lineWidth = 0.75;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(q.x, q.y);
+                ctx.stroke();
+              }
+            }
+
+            ctx.fillStyle = `rgba(${p.hue}, 0.65)`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          const baseWaveY = h * 0.91;
+          ctx.strokeStyle = 'rgba(103, 232, 249, 0.22)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let x = 20; x < w - 20; x += 8) {
+            const env = Math.sin((x / w) * Math.PI);
+            const y = baseWaveY + Math.sin(x * 0.022 + tick * 0.06) * 16 * env + Math.cos(x * 0.05 - tick * 0.04) * 5 * env;
+            if (x === 20) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          requestAnimationFrame(renderJarvis);
+        }
+
+        requestAnimationFrame(renderJarvis);
+      })();
+      function init() { try { state.trades = JSON.parse(localStorage.getItem(STORAGE_TRADES) || '[]'); } catch {} document.getElementById('fSym').innerHTML = STOCKS.map(s => `<option value="${s.symbol}">${s.symbol}</option>`).join(''); Array.from(new Set(STOCKS.map(s => s.sector))).sort().forEach(sec => { const o = document.createElement('option'); o.value = sec; o.textContent = sec; document.getElementById('sectorFilter').appendChild(o); }); document.querySelectorAll('.btn-tf').forEach(b => b.addEventListener('click', () => { state.timeframe = b.dataset.tf; document.querySelectorAll('.btn-tf').forEach(x => x.classList.toggle('active', x.dataset.tf === state.timeframe)); document.getElementById('headerTfBadge').textContent = tfDisplayLabel(state.timeframe); state.stocks.forEach(s => s.rsi = s.rsiMap[state.timeframe]); renderAll(); })); document.getElementById('tgTestBtn').addEventListener('click', async () => { const r = await fetch('/api/nifty-alert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test: true, timeframe: tfDisplayLabel(state.timeframe), long_th: state.longTh, short_th: state.shortTh }) }); const d = await r.json(); showToast(d.ok ? 'Test sent to Render TG Bots!' : 'Error: ' + d.error, d.ok ? 'long' : 'error'); }); document.addEventListener('click', e => { const b = e.target.closest('[data-quick-sym]'); if (b) { const s = state.stocks.get(b.dataset.quickSym); state.trades.push({ id: 'n50_' + Date.now(), symbol: b.dataset.quickSym, side: b.dataset.quickSide, entry: s?.price || 0, qty: 10, rsi: s?.rsi }); localStorage.setItem(STORAGE_TRADES, JSON.stringify(state.trades)); renderAll(); showToast(`Added ${b.dataset.quickSide} ${b.dataset.quickSym} to Portfolio!`, b.dataset.quickSide === 'LONG' ? 'long' : 'short'); } }); runScan(true); setInterval(() => runScan(false), 10000); }
+      if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', init); else init();
+    })();
+  </script>
+</body>
+</html>"""
+
+DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top 10 Crypto Futures RSI + VWAP + Funding — J.A.R.V.I.S. 2s Terminal</title>
+  <style>
+    :root {
+      --bg-main: #030914; --bg-header: rgba(5, 13, 27, 0.72); --bg-card: rgba(8, 18, 36, 0.34);
+      --border: rgba(56, 189, 248, 0.22); --border-light: rgba(103, 232, 249, 0.35);
+      --text-main: #f1f5f9; --text-muted: #94a3b8; --text-dim: #64748b;
+      --green: #10b981; --green-bg: rgba(16, 185, 129, 0.16); --green-border: rgba(16, 185, 129, 0.42);
+      --red: #f43f5e; --red-bg: rgba(244, 63, 94, 0.16); --red-border: rgba(244, 63, 94, 0.42);
+      --amber: #f59e0b; --amber-bg: rgba(245, 158, 11, 0.16); --amber-border: rgba(245, 158, 11, 0.38);
+      --cyan: #06b6d4; --cyan-light: #67e8f9; --cyan-bg: rgba(6, 182, 212, 0.16); --cyan-border: rgba(6, 182, 212, 0.38);
+      --purple-light: #d8b4fe; --purple-bg: rgba(168, 85, 247, 0.16); --purple-border: rgba(168, 85, 247, 0.42);
+      --radius: 10px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { color: var(--text-main); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; min-height: 100vh; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
+    .text-cyan { color: var(--cyan-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
+    .text-right { text-align: right; } .text-center { text-align: center; } .hidden { display: none !important; }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
+    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
+    html, body {
+      background-color: #030914 !important;
+      background-image:
+        radial-gradient(circle at 50% 22%, rgba(0, 212, 255, 0.11), transparent 48%),
+        radial-gradient(circle at 18% 82%, rgba(16, 185, 129, 0.08), transparent 45%),
+        radial-gradient(circle at 85% 78%, rgba(56, 189, 248, 0.09), transparent 45%) !important;
+    }
+
+    #sciFiBgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.92;
+    }
+
+    .sci-fi-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 35%, transparent 38%, rgba(2, 6, 15, 0.72) 100%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(56, 189, 248, 0.022) 0px,
+          rgba(56, 189, 248, 0.022) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+    }
+
+    .header, .main, .toast-wrap {
+      position: relative;
+      z-index: 2;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(5, 13, 27, 0.62) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.24) !important;
+      backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 24px rgba(6, 182, 212, 0.08);
+    }
+
+    .card, .kpi-card, .control-group, .live-bar, .tf-strip, .tg-panel {
+      background: rgba(8, 18, 36, 0.34) !important;
+      border-color: rgba(56, 189, 248, 0.22) !important;
+      backdrop-filter: blur(10px) saturate(135%);
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.14),
+        0 8px 28px rgba(2, 8, 20, 0.38);
+    }
+
+    .kpi-card:hover, .card:hover {
+      border-color: rgba(103, 232, 249, 0.45) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(125, 211, 252, 0.22),
+        0 0 24px rgba(6, 182, 212, 0.14);
+    }
+
+    thead th {
+      background: rgba(6, 15, 30, 0.72) !important;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
+      color: #7dd3fc !important;
+    }
+
+    tbody tr {
+      background: rgba(8, 18, 36, 0.18);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.11) !important;
+    }
+
+    tbody tr:hover {
+      background: rgba(14, 116, 144, 0.22) !important;
+    }
+
+    tbody tr.row-long {
+      background: rgba(16, 185, 129, 0.11) !important;
+    }
+
+    tbody tr.row-short {
+      background: rgba(244, 63, 94, 0.11) !important;
+    }
+
+    .brand-icon {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(16, 185, 129, 0.28)) !important;
+      border: 1px solid rgba(103, 232, 249, 0.75) !important;
+      box-shadow: 0 0 22px rgba(6, 182, 212, 0.55), inset 0 0 12px rgba(103, 232, 249, 0.35) !important;
+    }
+    .container { max-width: 1740px; margin: 0 auto; padding: 0 16px; }
+    .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
+    .pill-tf { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .pill-cloud { background: var(--green-bg); color: #6ee7b7; border-color: var(--green-border); font-size: 10px; }
+    .live-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(16, 185, 129, 0.75); }
+    .live-sep { color: var(--border-light); }
+    .controls-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(56, 189, 248, 0.16); }
+    .control-group { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
+    input[type="number"] { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 52px; text-align: center; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); text-decoration: none; }
+    .btn-tf { padding: 5px 10px; border: 1px solid transparent; background: transparent; color: var(--text-muted); border-radius: 6px; }
+    .btn-tf.active { background: var(--green-bg); color: #34d399; border-color: var(--green-border); }
+    .btn-vwap.active { background: var(--amber-bg); color: #fcd34d; border-color: var(--amber-border); }
+    .btn-funding.active { background: var(--purple-bg); color: var(--purple-light); border-color: var(--purple-border); }
+    .btn-tg.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .btn-long { padding: 4px 8px; font-size: 11px; background: var(--green-bg); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
+    .btn-short { padding: 4px 8px; font-size: 11px; background: var(--red-bg); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
+    .main { padding: 16px 0 36px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; display: flex; flex-direction: column; justify-content: space-between; }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+    .kpi-val { font-size: 20px; font-weight: 700; margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between; }
+    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-wrap { overflow-x: auto; width: 100%; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
+    thead th { padding: 11px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    tbody td { padding: 10px 12px; vertical-align: middle; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+    .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+    .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; }
+    .toast-wrap { position: fixed; bottom: 16px; right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; }
+    .toast { padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(8, 18, 36, 0.9); border: 1px solid var(--border-light); color: var(--text-main); }
+  </style>
+</head>
+<body>
+  <canvas id="sciFiBgCanvas"></canvas>
+  <div class="sci-fi-vignette"></div>
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-icon" title="J.A.R.V.I.S. Quantum RVF Live Terminal">
+            <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="#04131c" stroke="#67e8f9" stroke-width="1.5"/><circle cx="18" cy="18" r="10.5" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4 3"/><path d="M9 21L14 15L18.5 19.5L27 11" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="11" r="2.5" fill="#10b981"/></svg>
+          </div>
+          <div>
+            <div class="brand-title">
+              <span>Top 10 Crypto Futures RSI + VWAP + Funding</span>
+              <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
+              <span class="pill pill-cloud mono">J.A.R.V.I.S. • 2S RENDER</span>
+              <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50 NSE</a>
+              <a href="/portfolio" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--purple-border); color: var(--purple-light);">💼 Live Portfolio →</a>
+            </div>
+            <div class="brand-sub">Har 2 Second Live Scan (Dual TG Bot + Group Support) • Wilder's 14 RSI + Daily UTC VWAP + 8h Funding Filter</div>
+          </div>
+        </div>
+        <div class="live-bar">
+          <span class="status-dot pulse-dot"></span>
+          <strong id="liveFeedName" class="mono">CONNECTING...</strong>
+          <span class="live-sep">|</span>
+          <span class="text-muted">2s Scans: <strong id="liveScanCount" class="mono text-cyan">0</strong></span>
+          <span class="live-sep">|</span>
+          <span id="liveTimestamp" class="mono text-muted">--:--:-- IST</span>
+        </div>
+      </div>
+      <div class="controls-bar">
+        <div class="control-group" style="padding: 2px;">
+          <button type="button" data-tf="5m" class="btn btn-tf">5m</button>
+          <button type="button" data-tf="15m" class="btn btn-tf active">15m</button>
+          <button type="button" data-tf="1h" class="btn btn-tf">1h</button>
+        </div>
+        <div class="control-group"><label for="longThInput" class="text-green">Long RSI &lt;</label><input id="longThInput" type="number" min="10" max="55" value="35" class="mono text-green" /></div>
+        <div class="control-group"><label for="shortThInput" class="text-red">Short RSI &gt;</label><input id="shortThInput" type="number" min="45" max="90" value="70" class="mono text-red" /></div>
+        <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
+        <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
+        <button id="tgTestBtn" type="button" class="btn btn-tg active"><span id="tgStatusLabel">✈️ 24/7 TG Bot: Test</span></button>
+      </div>
+    </div>
+  </header>
+  <main class="main container">
+    <section class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-top"><span>Render 2s Sync</span><span id="kpiTfTag" class="mono text-cyan">15m</span></div><div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div><div id="kpiFeedDetail" class="kpi-sub">Loading...</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Long Signals</span><span class="text-green">LIVE</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Oversold + VWAP + Funding</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Short Signals</span><span class="text-red">LIVE</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Overbought + VWAP + Funding</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Most Oversold</span><span class="text-green mono">Lowest RSI</span></div><div class="kpi-val"><span id="kpiOversoldCoin" style="font-size: 16px;">--</span><span id="kpiOversoldRsi" class="mono text-green">--</span></div><div id="kpiOversoldPrice" class="kpi-sub mono">Mark: --</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Most Overbought</span><span class="text-red mono">Highest RSI</span></div><div class="kpi-val"><span id="kpiOverboughtCoin" style="font-size: 16px;">--</span><span id="kpiOverboughtRsi" class="mono text-red">--</span></div><div id="kpiOverboughtPrice" class="kpi-sub mono">Mark: --</div></div>
+    </section>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Pair</th><th class="text-right">Mark Price</th><th class="text-right">Daily VWAP (UTC)</th><th class="text-right">Candle Chg %</th><th class="text-right">8h Funding</th><th class="text-right">14-RSI</th><th class="text-center">Signal</th><th class="text-right">Target ±6.28%</th><th class="text-right">Hard SL ±2.0%</th><th class="text-center">Portfolio Trade</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="11" style="padding:28px;text-align:center;">Connecting to 2-second Render feed...</td></tr></tbody></table></div></div>
+  </main>
+  <div id="toastWrap" class="toast-wrap"></div>
+  <script>
+    (() => {
+      'use strict';
+      const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
+      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, vwap_filter: true, funding_filter: true };
+      let coins = [];
+      const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
+      const fmtPct = v => v == null ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+      function toast(m) { const w = document.getElementById('toastWrap'); const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; w.appendChild(e); setTimeout(() => e.remove(), 3000); }
+      async function poll() {
+        try {
+          const r = await fetch('/api/state', { cache: 'no-store' });
+          const d = await r.json();
+          document.getElementById('liveFeedName').textContent = d.active_feed || 'LIVE';
+          document.getElementById('liveScanCount').textContent = (d.scans_completed || 0).toLocaleString();
+          document.getElementById('liveTimestamp').textContent = d.last_scan || '--';
+          document.getElementById('kpiSyncTime').textContent = d.last_scan || '--';
+          document.getElementById('kpiFeedDetail').textContent = d.active_feed || 'Connected';
+          if (d.config) {
+            cfg = d.config;
+            document.getElementById('headerTfBadge').textContent = cfg.timeframe.toUpperCase();
+            document.getElementById('kpiTfTag').textContent = cfg.timeframe;
+            document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === cfg.timeframe));
+            document.getElementById('vwapFilterLabel').textContent = `⚡ VWAP Filter: ${cfg.vwap_filter ? 'ON' : 'OFF'}`;
+            document.getElementById('fundingFilterLabel').textContent = `💰 Funding Filter: ${cfg.funding_filter ? 'ON' : 'OFF'}`;
+          }
+          if (Array.isArray(d.coins)) {
+            coins = d.coins;
+            const valid = coins.filter(c => c.rsi != null);
+            document.getElementById('kpiLongCount').textContent = valid.filter(c => c.signal === 'LONG').length;
+            document.getElementById('kpiShortCount').textContent = valid.filter(c => c.signal === 'SHORT').length;
+            if (valid.length) {
+              const s = valid.slice().sort((a, b) => a.rsi - b.rsi);
+              document.getElementById('kpiOversoldCoin').textContent = s[0].pair;
+              document.getElementById('kpiOversoldRsi').textContent = s[0].rsi.toFixed(2);
+              document.getElementById('kpiOversoldPrice').textContent = 'Mark: $' + fmtP(s[0].price);
+              const h = s[s.length - 1];
+              document.getElementById('kpiOverboughtCoin').textContent = h.pair;
+              document.getElementById('kpiOverboughtRsi').textContent = h.rsi.toFixed(2);
+              document.getElementById('kpiOverboughtPrice').textContent = 'Mark: $' + fmtP(h.price);
+            }
+            const sorted = coins.slice().sort((a, b) => (a.rsi ?? 999) - (b.rsi ?? 999));
+            document.getElementById('screenerTbody').innerHTML = sorted.map(c => {
+              const isShort = c.signal === 'SHORT';
+              const tp = c.price ? (isShort ? c.price * 0.9372 : c.price * 1.0628) : null;
+              const sl = c.price ? (isShort ? c.price * 1.02 : c.price * 0.98) : null;
+              const cls = c.signal === 'LONG' ? 'badge-long' : c.signal === 'SHORT' ? 'badge-short' : 'badge-wait';
+              const rowCls = c.signal === 'LONG' ? 'row-long' : c.signal === 'SHORT' ? 'row-short' : '';
+              return `<tr class="${rowCls}"><td class="mono text-dim">#${c.sr}</td><td><strong class="mono">${c.pair}</strong></td><td class="text-right mono" style="font-weight:700;">$${fmtP(c.price)}</td><td class="text-right mono text-cyan">$${fmtP(c.vwap)} (${fmtPct(c.vwapDiffPct)})</td><td class="text-right mono ${c.changePct >= 0 ? 'text-green' : 'text-red'}">${fmtPct(c.changePct)}</td><td class="text-right mono">${c.funding != null ? (c.funding * 100).toFixed(4) + '%' : '—'}</td><td class="text-right mono" style="font-weight:700;">${c.rsi != null ? c.rsi.toFixed(2) : '--'}</td><td class="text-center"><span class="badge ${cls}">${c.signal}</span></td><td class="text-right mono text-green">$${fmtP(tp)}</td><td class="text-right mono text-red">$${fmtP(sl)}</td><td class="text-center"><button type="button" class="btn btn-long" data-add-c="${c.coin}" data-add-s="LONG">+ Long</button> <button type="button" class="btn btn-short" data-add-c="${c.coin}" data-add-s="SHORT">+ Short</button></td></tr>`;
+            }).join('');
+          }
+        } catch {}
+      }
+      async function pushCfg(patch) { await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...patch, rescan: true, force_history: true }) }); poll(); }
+      document.querySelectorAll('.btn-tf').forEach(b => b.addEventListener('click', () => pushCfg({ timeframe: b.dataset.tf })));
+      document.getElementById('vwapFilterToggleBtn').addEventListener('click', () => pushCfg({ vwap_filter: !cfg.vwap_filter }));
+      document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => pushCfg({ funding_filter: !cfg.funding_filter }));
+      document.getElementById('tgTestBtn').addEventListener('click', async () => { const r = await fetch('/api/test-tg', { method: 'POST' }); const d = await r.json(); toast(d.ok ? 'Test sent to Render TG Bots!' : 'Error: ' + d.error); });
+      document.addEventListener('click', e => {
+        const b = e.target.closest('[data-add-c]');
+        if (b) {
+          const c = coins.find(x => x.coin === b.dataset.addC);
+          if (!c) return;
+          const trades = JSON.parse(localStorage.getItem(STORAGE_TRADES) || '[]');
+          trades.push({ id: 'ft_' + Date.now(), coin: c.coin, side: b.dataset.addS, mode: 'single', entry: c.price, margin: 100, lev: 5, rsi: c.rsi });
+          localStorage.setItem(STORAGE_TRADES, JSON.stringify(trades));
+          toast(`Added ${b.dataset.addS} ${c.pair} ($100 • 5x) to Portfolio!`);
+        }
+      });
+      // =========================================================================
+      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
+      // =========================================================================
+      (function initJarvisSimulation() {
+        const canvas = document.getElementById('sciFiBgCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let tick = 0;
+
+        const particles = [];
+        const streams = [];
+        const PARTICLE_COUNT = 54;
+        const STREAM_COUNT = 9;
+
+        function resize() {
+          w = window.innerWidth;
+          h = window.innerHeight;
+          canvas.width = Math.max(1, w) * dpr;
+          canvas.height = Math.max(1, h) * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initEntities() {
+          particles.length = 0;
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+              x: Math.random() * (w || 1440),
+              y: Math.random() * (h || 900),
+              vx: (Math.random() - 0.5) * 0.42,
+              vy: (Math.random() - 0.5) * 0.42,
+              size: 1 + Math.random() * 2,
+              hue: i % 3 === 0 ? '16, 185, 129' : '56, 189, 248'
+            });
+          }
+
+          streams.length = 0;
+          for (let s = 0; s < STREAM_COUNT; s++) {
+            streams.push({
+              x: ((s + 0.5) / STREAM_COUNT) * (w || 1440),
+              y: Math.random() * (h || 900),
+              len: 45 + Math.random() * 95,
+              speed: 1.1 + Math.random() * 1.9,
+              alpha: 0.08 + Math.random() * 0.14
+            });
+          }
+        }
+
+        function drawArcReactor(cx, cy, radius, rot) {
+          ctx.save();
+          ctx.translate(cx, cy);
+
+          const glow = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 1.35);
+          glow.addColorStop(0, 'rgba(56, 189, 248, 0.14)');
+          glow.addColorStop(0.55, 'rgba(6, 182, 212, 0.05)');
+          glow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 1.35, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.rotate(rot * 0.65);
+          const segs = 12;
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2 + 0.05;
+            const a1 = ((i + 1) / segs) * Math.PI * 2 - 0.05;
+            ctx.strokeStyle = i % 3 === 0 ? 'rgba(16, 185, 129, 0.28)' : 'rgba(103, 232, 249, 0.24)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, a0, a1);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(-rot * 1.25);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.76, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (let k = 0; k < 24; k++) {
+            const ang = (k / 24) * Math.PI * 2;
+            const rIn = radius * (k % 2 === 0 ? 0.69 : 0.72);
+            const rOut = radius * 0.76;
+            ctx.strokeStyle = k % 6 === 0 ? 'rgba(110, 231, 183, 0.45)' : 'rgba(125, 211, 252, 0.26)';
+            ctx.lineWidth = k % 6 === 0 ? 1.8 : 1;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang) * rIn, Math.sin(ang) * rIn);
+            ctx.lineTo(Math.cos(ang) * rOut, Math.sin(ang) * rOut);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(rot * 2.4);
+          const sweepGrad = ctx.createConicGradient(0, 0);
+          sweepGrad.addColorStop(0, 'rgba(103, 232, 249, 0.28)');
+          sweepGrad.addColorStop(0.14, 'rgba(16, 185, 129, 0.08)');
+          sweepGrad.addColorStop(0.15, 'rgba(56, 189, 248, 0)');
+          sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = sweepGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.66, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius * 0.26, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        resize();
+        initEntities();
+        window.addEventListener('resize', () => {
+          resize();
+          initEntities();
+        });
+
+        function renderJarvis() {
+          tick += 1;
+          const rot = tick * 0.006;
+          ctx.clearRect(0, 0, w, h);
+
+          const step = 72;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let x = 0; x < w; x += step) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+          }
+          for (let y = 0; y < h; y += step) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+          }
+          ctx.stroke();
+
+          for (let i = 0; i < streams.length; i++) {
+            const st = streams[i];
+            st.y += st.speed;
+            if (st.y - st.len > h) {
+              st.y = -20;
+              st.x = ((i + 0.5) / STREAM_COUNT) * w + (Math.random() - 0.5) * 40;
+            }
+            const g = ctx.createLinearGradient(st.x, st.y - st.len, st.x, st.y);
+            g.addColorStop(0, 'rgba(56, 189, 248, 0)');
+            g.addColorStop(0.75, `rgba(56, 189, 248, ${st.alpha})`);
+            g.addColorStop(1, 'rgba(110, 231, 183, 0.45)');
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(st.x, st.y - st.len);
+            ctx.lineTo(st.x, st.y);
+            ctx.stroke();
+          }
+
+          const mainR = Math.min(w, h) * 0.25;
+          drawArcReactor(w * 0.5, h * 0.54, mainR, rot);
+          drawArcReactor(w * 0.88, h * 0.22, Math.min(w, h) * 0.11, -rot * 1.4);
+
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = w;
+            if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h;
+            if (p.y > h) p.y = 0;
+
+            for (let j = i + 1; j < particles.length; j++) {
+              const q = particles[j];
+              const d = Math.hypot(p.x - q.x, p.y - q.y);
+              if (d < 155) {
+                const a = (1 - d / 155) * 0.16;
+                ctx.strokeStyle = `rgba(56, 189, 248, ${a.toFixed(3)})`;
+                ctx.lineWidth = 0.75;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(q.x, q.y);
+                ctx.stroke();
+              }
+            }
+
+            ctx.fillStyle = `rgba(${p.hue}, 0.65)`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          const baseWaveY = h * 0.91;
+          ctx.strokeStyle = 'rgba(103, 232, 249, 0.22)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let x = 20; x < w - 20; x += 8) {
+            const env = Math.sin((x / w) * Math.PI);
+            const y = baseWaveY + Math.sin(x * 0.022 + tick * 0.06) * 16 * env + Math.cos(x * 0.05 - tick * 0.04) * 5 * env;
+            if (x === 20) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          requestAnimationFrame(renderJarvis);
+        }
+
+        requestAnimationFrame(renderJarvis);
+      })();
+      poll();
+      setInterval(poll, 1500);
+    })();
+  </script>
+</body>
+</html>"""
 
 
 # =============================================================================
-# 8. HTTP SERVER ROUTES ("/", "/nifty", "/api/state", "/api/nifty-alert")
+# 8. HTTP SERVER ROUTES ("/", "/nifty", "/portfolio", "/api/state", "/api/nifty-alert")
 # =============================================================================
 class WebTerminalHandler(BaseHTTPRequestHandler):
     def _send_json(self, payload: dict, status: int = 200):
@@ -5086,6 +3892,15 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_html(self, html_str: str):
+        html_bytes = html_str.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(html_bytes)))
+        self.end_headers()
+        self.wfile.write(html_bytes)
 
     def do_GET(self):
         path = urlparse(self.path).path
@@ -5104,13 +3919,11 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             return
 
         if path in ("/nifty", "/nifty50", "/nifty-50"):
-            nifty_bytes = NIFTY_HTML.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(nifty_bytes)))
-            self.end_headers()
-            self.wfile.write(nifty_bytes)
+            self._send_html(NIFTY_HTML)
+            return
+
+        if path in ("/portfolio", "/pnl"):
+            self._send_html(PORTFOLIO_HTML)
             return
 
         if path == "/api/state":
@@ -5130,13 +3943,7 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             self._send_json(snapshot)
             return
 
-        html_bytes = DASHBOARD_HTML.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(html_bytes)))
-        self.end_headers()
-        self.wfile.write(html_bytes)
+        self._send_html(DASHBOARD_HTML)
 
     def do_HEAD(self):
         self.send_response(200)
@@ -5180,7 +3987,7 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             with STATE_LOCK:
                 cfg = dict(CONFIG)
             ok, err = send_telegram(
-                f"✅ <b>Render 2-Second Live Web Terminal Test OK!</b>\n"
+                f"✅ <b>J.A.R.V.I.S. 2-Second Live Web Terminal Test OK!</b>\n"
                 f"TF: <b>{cfg['timeframe'].upper()}</b> | Long &lt; <b>{cfg['long_th']}</b> | Short &gt; <b>{cfg['short_th']}</b>\n"
                 f"VWAP Filter: <b>{'ON' if cfg['vwap_filter'] else 'OFF'}</b> | "
                 f"Funding Filter: <b>{'ON' if cfg['funding_filter'] else 'OFF'}</b>\n"
@@ -5195,7 +4002,7 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
                 l_th = body.get("long_th", 35)
                 s_th = body.get("short_th", 70)
                 ok, err = send_telegram(
-                    f"✅ <b>Nifty 50 Page Connected to Render TG Bot!</b>\n"
+                    f"✅ <b>Nifty 50 Page Connected to J.A.R.V.I.S. TG Bot!</b>\n"
                     f"Timeframe: <b>{tf_lbl}</b> | Long &lt; <b>{l_th}</b> | Short &gt; <b>{s_th}</b>\n"
                     f"⏰ {now_ist_str()}"
                 )
@@ -5273,16 +4080,17 @@ def main():
 
     if SEND_STARTUP_MSG:
         send_telegram(
-            f"✅ <b>Render 2-Second 24/7 Crypto + Nifty 50 Terminal Started!</b>\n"
-            f"Crypto TF: <b>{CONFIG['timeframe'].upper()}</b> | Long &lt; <b>{CONFIG['long_th']}</b> | Short &gt; <b>{CONFIG['short_th']}</b>\n"
-            f"Nifty 50 Page: <b>/nifty</b> (Connected to Render TG Bot)\n"
+            f"✅ <b>J.A.R.V.I.S. 3-Page Live Terminal Started!</b>\n"
+            f"Crypto: <b>/</b> | Nifty 50: <b>/nifty</b> | Portfolio: <b>/portfolio</b>\n"
             f"⏰ {now_ist_str()}"
         )
 
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebTerminalHandler)
-    print(f"[{now_ist_str()}] Crypto (/) + Nifty 50 (/nifty) Web Terminal listening on port {PORT}")
+    print(f"[{now_ist_str()}] J.A.R.V.I.S. Terminal (/, /nifty, /portfolio) listening on port {PORT}")
     server.serve_forever()
 
 
 if __name__ == "__main__":
     main()
+render_bot.py
+Displaying render_bot.py.
