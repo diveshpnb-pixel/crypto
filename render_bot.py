@@ -2,7 +2,7 @@
 """
 J.A.R.V.I.S. Live Trading Terminal — Crypto (/), Nifty 50 (/nifty) & Portfolio (/portfolio)
 -------------------------------------------------------------------------------------------
-- "/"          : Top 10 Crypto Futures 2-Second Live Terminal + 24/7 Telegram Alerts
+- "/"          : Top 10 Crypto Futures 2-Second Live Scalping Terminal (VWAP + 9/21 EMA + 14-RSI) + 24/7 TG Alerts
 - "/nifty"     : Dedicated Nifty 50 Live RSI Screener (5m to 1Y) + Dual Render TG Alerts
 - "/portfolio" : Unified Live Portfolio, Capital Allocation, Realized P&L & Win Rate Tracker
 - Transparent Glass Tile HUD + Holographic Arc Reactor Canvas Simulation
@@ -35,6 +35,7 @@ CONFIG = {
     "short_th": float(os.getenv("SHORT_RSI_TH", "70")),
     "vwap_filter": os.getenv("VWAP_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "funding_filter": os.getenv("FUNDING_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
+    "scalp_alerts": os.getenv("SCALP_ALERTS_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "cooldown_min": int(os.getenv("TG_COOLDOWN_MIN", "15")),
 }
 
@@ -68,7 +69,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Crypto-Nifty-Portfolio/7.0"})
+SESSION.headers.update({"User-Agent": "JARVIS-Crypto-Nifty-Portfolio/8.0"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -89,7 +90,7 @@ SHARED_STATE = {
 
 
 # =============================================================================
-# 3. FORMATTING & TECHNICAL MATH
+# 3. FORMATTING & TECHNICAL MATH (RSI + DAILY VWAP + 9/21 EMA)
 # =============================================================================
 def fmt_price(v) -> str:
     if v is None or math.isnan(v):
@@ -129,6 +130,25 @@ def get_utc_day_start_ms(ts_ms: int) -> int:
     dt = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
     day_start = datetime(dt.year, dt.month, dt.day, tzinfo=timezone.utc)
     return int(day_start.timestamp() * 1000)
+
+
+def compute_ema_base(closes: list[float], period: int):
+    if not closes:
+        return None
+    if len(closes) < period:
+        return sum(closes) / len(closes)
+    k = 2.0 / (period + 1)
+    ema = sum(closes[:period]) / period
+    for px in closes[period:]:
+        ema = px * k + ema * (1.0 - k)
+    return ema
+
+
+def compute_live_ema(base_ema: float, live_price: float, period: int):
+    if base_ema is None or live_price is None:
+        return base_ema
+    k = 2.0 / (period + 1)
+    return live_price * k + base_ema * (1.0 - k)
 
 
 def compute_wilder_base(closes: list[float], period: int = RSI_PERIOD):
@@ -384,7 +404,7 @@ def fetch_live_prices_batch() -> tuple[str, dict[str, float]]:
 
 
 # =============================================================================
-# 5. SIGNAL LOGIC & DUAL TELEGRAM SENDER (SUPPORTS 2 BOTS / USERS / GROUPS)
+# 5. SIGNAL LOGIC (RSI + VWAP + FUNDING + 9/21 EMA SCALPING) & DUAL TG
 # =============================================================================
 def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -> str:
     if rsi is None or price is None:
@@ -400,6 +420,34 @@ def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -
     if rsi > cfg["short_th"] and below_vwap and short_funding_ok:
         return "SHORT"
     return "WAIT"
+
+
+def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float) -> dict:
+    """
+    Intraday & Scalping (5m - 15m) Pullback Engine:
+    - Trend Filter: Price vs Session VWAP & 9 EMA vs 21 EMA
+    - Pullback Zone: Price within +-0.40% of 21 EMA or Session VWAP
+    - Momentum Filter: RSI(14) > 45 for Bullish pullback, RSI(14) < 55 for Bearish rejection
+    """
+    if None in (price, rsi, vwap, ema9, ema21) or price <= 0:
+        return {"code": "WAIT", "label": "SYNCING...", "trend": "NEUTRAL"}
+
+    bull_trend = (price > vwap) and (ema9 > ema21)
+    bear_trend = (price < vwap) and (ema9 < ema21)
+
+    dist_ema21_pct = abs(price - ema21) / price * 100.0
+    dist_vwap_pct = abs(price - vwap) / price * 100.0
+    near_zone = (dist_ema21_pct <= 0.40) or (dist_vwap_pct <= 0.40)
+
+    if bull_trend and near_zone and (44.0 <= rsi <= 68.0):
+        return {"code": "SCALP_LONG", "label": "LONG • PULLBACK", "trend": "BULL"}
+    if bear_trend and near_zone and (32.0 <= rsi <= 56.0):
+        return {"code": "SCALP_SHORT", "label": "SHORT • PULLBACK", "trend": "BEAR"}
+    if bull_trend:
+        return {"code": "BULL_TREND", "label": "BULL TREND", "trend": "BULL"}
+    if bear_trend:
+        return {"code": "BEAR_TREND", "label": "BEAR TREND", "trend": "BEAR"}
+    return {"code": "CHOP", "label": "VWAP CHOP", "trend": "CHOP"}
 
 
 def _post_tg_single(tk: str, cid: str, html_text: str):
@@ -450,8 +498,8 @@ def send_telegram(html_text: str, token: str = None, chat_id: str = None):
     return False, " | ".join(errors)
 
 
-def format_signal_msg(item: dict, side: str, price: float, rsi: float, vwap: float, vwap_diff: float, funding, source: str, cfg: dict) -> str:
-    is_long = side == "LONG"
+def format_signal_msg(item: dict, side: str, price: float, rsi: float, vwap: float, vwap_diff: float, ema9: float, ema21: float, scalp_lbl: str, funding, source: str, cfg: dict) -> str:
+    is_long = "LONG" in side
     icon = "🟢" if is_long else "🔴"
     tp = price * 1.0628 if is_long else price * 0.9372
     avg = price * 0.9686 if is_long else price * 1.0314
@@ -467,11 +515,13 @@ def format_signal_msg(item: dict, side: str, price: float, rsi: float, vwap: flo
     filter_tag = f" [{'+'.join(active_filters)} ON]" if active_filters else ""
 
     return (
-        f"{icon} <b>{side} SIGNAL: {item['pair']}</b> ({cfg['timeframe'].upper()}){filter_tag}\n"
+        f"{icon} <b>{side}: {item['pair']}</b> ({cfg['timeframe'].upper()}){filter_tag}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
+        f"⚡ <b>Scalp Setup:</b> {scalp_lbl}\n"
         f"📊 <b>RSI (14):</b> {rsi:.2f}\n"
         f"💵 <b>Mark Price:</b> ${fmt_price(price)}\n"
         f"📈 <b>Daily VWAP:</b> ${fmt_price(vwap)} ({vwap_pos} {fmt_pct(vwap_diff)})\n"
+        f"〰️ <b>9 / 21 EMA:</b> ${fmt_price(ema9)} / ${fmt_price(ema21)}\n"
         f"💰 <b>8h Funding:</b> {fmt_funding(funding)}\n"
         f"🎯 <b>Target (2π ±6.28%):</b> ${fmt_price(tp)}\n"
         f"🔁 <b>Next Avg (π ±3.14%):</b> ${fmt_price(avg)}\n"
@@ -504,6 +554,11 @@ def seed_initial_snapshot():
             "changePct": 0.0,
             "vwap": px,
             "vwapDiffPct": 0.0,
+            "ema9": px,
+            "ema21": px,
+            "emaTrend": "NEUTRAL",
+            "scalpCode": "WAIT",
+            "scalpLabel": "SYNCING...",
             "funding": None,
             "rsi": None,
             "rsiRank": None,
@@ -528,6 +583,8 @@ def sync_all_candle_histories(tf: str, coin_cache: dict):
         closed_closes = [k["c"] for k in closed]
         prev_close = closed_closes[-1]
         base_gain, base_loss = compute_wilder_base(closed_closes, RSI_PERIOD)
+        base_ema9 = compute_ema_base(closed_closes, 9)
+        base_ema21 = compute_ema_base(closed_closes, 21)
         day_start = get_utc_day_start_ms(cur["t"])
         vwap_base_pv, vwap_base_vol = compute_vwap_base(closed, day_start)
         return item["coin"], {
@@ -536,6 +593,8 @@ def sync_all_candle_histories(tf: str, coin_cache: dict):
             "prev_close": prev_close,
             "base_gain": base_gain,
             "base_loss": base_loss,
+            "base_ema9": base_ema9,
+            "base_ema21": base_ema21,
             "vwap_day_start": day_start,
             "vwap_base_pv": vwap_base_pv,
             "vwap_base_vol": vwap_base_vol,
@@ -608,8 +667,12 @@ def scanner_worker():
             change_pct = ((price - prev_close) / prev_close) * 100.0 if prev_close else 0.0
             rsi = compute_live_rsi(c["base_gain"], c["base_loss"], prev_close, price, RSI_PERIOD)
             vwap, vwap_diff = compute_live_vwap(c, price)
+            ema9 = compute_live_ema(c.get("base_ema9"), price, 9)
+            ema21 = compute_live_ema(c.get("base_ema21"), price, 21)
             funding = c.get("funding")
+
             sig = evaluate_signal(price, rsi, vwap, funding, cfg)
+            scalp = evaluate_scalp_setup(price, rsi, vwap, ema9, ema21)
             feed_name = batch_feed or c.get("source", "Live")
 
             scanned_rows.append({
@@ -622,17 +685,32 @@ def scanner_worker():
                 "changePct": change_pct,
                 "vwap": vwap,
                 "vwapDiffPct": vwap_diff,
+                "ema9": ema9,
+                "ema21": ema21,
+                "emaTrend": scalp["trend"],
+                "scalpCode": scalp["code"],
+                "scalpLabel": scalp["label"],
                 "funding": funding,
                 "rsi": rsi,
                 "signal": sig,
                 "source": feed_name,
             })
 
+            # Trigger Telegram alert on either RSI extreme OR 9/21 EMA + VWAP Scalping Pullback
+            alert_side = None
             if sig in ("LONG", "SHORT"):
-                key = (ck, sig, tf)
+                alert_side = f"{sig} SIGNAL"
+            elif cfg.get("scalp_alerts") and scalp["code"] in ("SCALP_LONG", "SCALP_SHORT"):
+                alert_side = "SCALP LONG" if scalp["code"] == "SCALP_LONG" else "SCALP SHORT"
+
+            if alert_side:
+                key = (ck, alert_side, tf)
                 now_ts = time.time()
                 if now_ts - last_sent.get(key, 0) >= cooldown_sec:
-                    msg = format_signal_msg(item, sig, price, rsi, vwap, vwap_diff, funding, feed_name, cfg)
+                    msg = format_signal_msg(
+                        item, alert_side, price, rsi, vwap, vwap_diff,
+                        ema9, ema21, scalp["label"], funding, feed_name, cfg
+                    )
                     ok, _ = send_telegram(msg)
                     if ok:
                         last_sent[key] = now_ts
@@ -641,15 +719,17 @@ def scanner_worker():
                             SHARED_STATE["alert_history"].insert(0, {
                                 "time": datetime.now(IST).strftime("%d %b %H:%M:%S IST"),
                                 "pair": item["pair"],
-                                "side": sig,
+                                "side": alert_side,
                                 "tf": tf.upper(),
                                 "price": price,
                                 "rsi": rsi,
                                 "vwap": vwap,
+                                "ema9": ema9,
+                                "ema21": ema21,
                                 "funding": funding,
                             })
                             SHARED_STATE["alert_history"] = SHARED_STATE["alert_history"][:30]
-                        print(f"[{now_ist_str()}] >>> 2s ALERT SENT: {sig} {item['pair']} (RSI {rsi:.2f})")
+                        print(f"[{now_ist_str()}] >>> 2s ALERT SENT: {alert_side} {item['pair']} (RSI {rsi:.2f})")
 
         valid_sorted = sorted([r for r in scanned_rows if r["rsi"] is not None], key=lambda x: x["rsi"])
         rank_map = {r["coin"]: idx + 1 for idx, r in enumerate(valid_sorted)}
@@ -757,7 +837,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
     }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
 
-    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
     #sciFiBgCanvas {
       position: fixed;
       inset: 0;
@@ -1005,7 +1084,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
 
     .main { padding: 18px 0 40px; }
 
-    /* 6 KPI CARDS */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1054,7 +1132,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       text-overflow: ellipsis;
     }
 
-    /* ALLOCATION & ANALYTICS SPLIT */
     .analytics-grid {
       display: grid;
       grid-template-columns: 1.15fr 1fr;
@@ -1121,7 +1198,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       transition: width 0.3s ease;
     }
 
-    /* TABS & ACTIONS */
     .tabs-row {
       display: flex;
       flex-wrap: wrap;
@@ -1340,8 +1416,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
   </header>
 
   <main class="main container">
-
-    <!-- 6 UNIFIED PORTFOLIO KPI CARDS -->
     <section class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-top">
@@ -1398,7 +1472,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ALLOCATION & RISK METERS -->
     <section class="analytics-grid">
       <div class="card panel-box">
         <div class="panel-title">
@@ -1440,7 +1513,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- TABS & EXPORT -->
     <div class="tabs-row">
       <div class="tabs-list">
         <button type="button" data-tab="open" class="tab-btn active">
@@ -1463,7 +1535,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- QUICK ADD POSITION FORM -->
     <form id="portfolioForm" class="card form-card">
       <div class="form-header">
         <strong>+ Add New Position to Portfolio (Auto-syncs with Crypto &amp; Nifty 50 Trade Logs)</strong>
@@ -1521,7 +1592,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       </div>
     </form>
 
-    <!-- TAB 1: OPEN LIVE POSITIONS -->
     <section id="tab-open" class="tab-panel">
       <div class="card">
         <div class="table-wrap">
@@ -1549,7 +1619,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- TAB 2: CLOSED HISTORY -->
     <section id="tab-closed" class="tab-panel hidden">
       <div class="card">
         <div class="table-wrap">
@@ -1574,7 +1643,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         <div id="closedPositionsEmpty" class="empty-state hidden">No closed positions yet. Click <strong>Book / Close</strong> on any open position to lock in realized P&amp;L.</div>
       </div>
     </section>
-
   </main>
 
   <div id="toastWrap" class="toast-wrap"></div>
@@ -1583,7 +1651,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
     (() => {
       'use strict';
 
-      // Shared localStorage keys so positions added on "/" or "/nifty" appear here automatically!
       const STORAGE_CRYPTO_TRADES = 'top10_futures_rsi_v3_trades';
       const STORAGE_NIFTY_TRADES  = 'nifty50_rsi_v4_trades';
       const STORAGE_CLOSED_TRADES = 'jarvis_portfolio_closed_v1';
@@ -1831,7 +1898,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         const totalClosed = wins + losses;
         const winRate = totalClosed > 0 ? (wins / totalClosed) * 100 : 0;
 
-        // KPI Cards
         document.getElementById('kpiCryptoCap').textContent = fmtUSDT(cCap);
         const cSub = document.getElementById('kpiCryptoPnl');
         cSub.textContent = `Unrealized: ${fmtUSDT(cPnl)} (${fmtPct(cRoe)})`;
@@ -1861,7 +1927,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         riskEl.textContent = slRiskCount > 0 ? `⚠ ${slRiskCount} near Hard SL` : 'All positions healthy';
         riskEl.className = `kpi-sub mono ${slRiskCount > 0 ? 'text-red' : 'text-green'}`;
 
-        // Allocation bar
         document.getElementById('allocTotalTag').textContent = `${fmtINR(totalCapInr)} Deployed`;
         const cPct = totalCapInr > 0 ? (cCapInr / totalCapInr) * 100 : 50;
         const nPct = totalCapInr > 0 ? (nCap / totalCapInr) * 100 : 50;
@@ -1870,7 +1935,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         document.getElementById('allocCryptoTxt').textContent = `${cPct.toFixed(1)}% (${fmtINR(cCapInr)})`;
         document.getElementById('allocNiftyTxt').textContent = `${nPct.toFixed(1)}% (${fmtINR(nCap)})`;
 
-        // Health bars
         const totalOpen = allOpen.length || 1;
         const inProfit = allOpen.filter(r => r.pnl > 0).length;
         const inLoss   = allOpen.filter(r => r.pnl < 0).length;
@@ -1882,11 +1946,9 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         document.getElementById('cntInHold').textContent   = inHold;
         document.getElementById('cntInLoss').textContent   = inLoss;
 
-        // Badges
         document.getElementById('tabOpenBadge').textContent = allOpen.length;
         document.getElementById('tabClosedBadge').textContent = state.closedTrades.length;
 
-        // Render Open Table
         const filteredOpen = allOpen.filter(r => state.marketFilter === 'ALL' || r.market === state.marketFilter);
         const openBody = document.getElementById('openPositionsTbody');
         const openEmpty = document.getElementById('openPositionsEmpty');
@@ -1924,7 +1986,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
           }).join('');
         }
 
-        // Render Closed Table
         const filteredClosed = state.closedTrades.filter(r => state.marketFilter === 'ALL' || r.market === state.marketFilter);
         const closedBody = document.getElementById('closedPositionsTbody');
         const closedEmpty = document.getElementById('closedPositionsEmpty');
@@ -2155,9 +2216,6 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
         document.getElementById('exportAllCsvBtn').addEventListener('click', exportFullCSV);
       }
 
-      // =========================================================================
-      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
-      // =========================================================================
       (function initJarvisSimulation() {
         const canvas = document.getElementById('sciFiBgCanvas');
         if (!canvas) return;
@@ -2449,7 +2507,6 @@ NIFTY_HTML = r"""<!DOCTYPE html>
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .spinning { display: inline-block; animation: spin 0.8s linear infinite; }
-    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
     html, body {
       background-color: #030914 !important;
       background-image:
@@ -2798,16 +2855,14 @@ NIFTY_HTML = r"""<!DOCTYPE html>
       ];
       const TF_MAP = new Map(TIMEFRAMES.map(t => [t.key, t]));
       function createEmptyRsiMap() { return { '5m': null, '15m': null, '30m': null, '1h': null, '2h': null, '4h': null, '1d': null, '1w': null, '1mo': null, '1y': null }; }
-      const RSI_PERIOD = 14, STORAGE_TRADES = 'nifty50_rsi_v4_trades', STORAGE_PREFS = 'nifty50_rsi_v4_prefs';
-      const state = { sourceMode: 'auto', activeSource: 'tv_direct', timeframe: '15m', pollIntervalMs: 10000, longTh: 35, shortTh: 70, soundEnabled: false, tgEnabled: true, tgConfiguredOnRender: false, activeTab: 'screener', sortKey: 'rsi', sortDir: 'asc', searchQuery: '', sectorFilter: 'ALL', signalFilter: 'ALL', scans: 0, lastUpdateDate: null, sessionId: 0, isScanning: false, pollTimer: null, audioCtx: null, cooldowns: new Map(), stocks: new Map(), trades: [] };
-      STOCKS.forEach(s => state.stocks.set(s.symbol, { ...s, price: null, prevClose: null, changePct: null, rsiMap: createEmptyRsiMap(), rsi: null, rsiRank: null, flash: null, loaded: false }));
-      function computeWilderRSI(closes, period = RSI_PERIOD) { if (!closes || closes.length <= period) return null; let gains = 0, losses = 0; for (let i = 1; i <= period; i++) { const d = closes[i] - closes[i - 1]; if (d >= 0) gains += d; else losses -= d; } let avgGain = gains / period, avgLoss = losses / period; for (let i = period + 1; i < closes.length; i++) { const d = closes[i] - closes[i - 1]; avgGain = (avgGain * (period - 1) + (d > 0 ? d : 0)) / period; avgLoss = (avgLoss * (period - 1) + (d < 0 ? -d : 0)) / period; } if (avgLoss === 0) return 100; return Math.round((100 - 100 / (1 + avgGain / avgLoss)) * 100) / 100; }
+      const RSI_PERIOD = 14, STORAGE_TRADES = 'nifty50_rsi_v4_trades';
+      const state = { timeframe: '15m', longTh: 35, shortTh: 70, tgEnabled: true, searchQuery: '', sectorFilter: 'ALL', signalFilter: 'ALL', scans: 0, lastUpdateDate: null, sessionId: 0, isScanning: false, stocks: new Map(), trades: [] };
+      STOCKS.forEach(s => state.stocks.set(s.symbol, { ...s, price: null, prevClose: null, changePct: null, rsiMap: createEmptyRsiMap(), rsi: null, rsiRank: null, loaded: false }));
       const tfDisplayLabel = k => (TF_MAP.get(k)?.label || k).toUpperCase();
-      const fmtINR = v => (v == null || isNaN(v)) ? '--' : (v < 0 ? '-₹' : '₹') + Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const fmtPrice = v => (v == null || isNaN(v)) ? '--' : v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const fmtPct = v => (v == null || isNaN(v)) ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
       const fmtIST = d => d ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d) + ' IST' : '--:--:-- IST';
-      const getSignal = rsi => (rsi == null || isNaN(rsi)) ? { label: 'LOAD', cls: 'badge-neutral', bar: '#475569' } : rsi < state.longTh ? { label: 'LONG', cls: 'badge-long', bar: '#10b981' } : rsi > state.shortTh ? { label: 'SHORT', cls: 'badge-short', bar: '#f43f5e' } : { label: 'WAIT', cls: 'badge-wait', bar: '#06b6d4' };
+      const getSignal = rsi => (rsi == null || isNaN(rsi)) ? { label: 'LOAD', cls: 'badge-neutral' } : rsi < state.longTh ? { label: 'LONG', cls: 'badge-long' } : rsi > state.shortTh ? { label: 'SHORT', cls: 'badge-short' } : { label: 'WAIT', cls: 'badge-wait' };
       function fetchWithTimeout(url, opts = {}, ms = 8000) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t)); }
       function showToast(msg, type = 'info') { const w = document.getElementById('toastWrap'); const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = msg; w.appendChild(el); setTimeout(() => el.remove(), 3500); }
       async function triggerRenderTelegramSignal(s, side) { if (!state.tgEnabled) return; try { await fetch('/api/nifty-alert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol: s.symbol, name: s.name, sector: s.sector, side, timeframe: tfDisplayLabel(state.timeframe), price: s.price, changePct: s.changePct, rsi: s.rsi }) }); } catch {} }
@@ -2815,9 +2870,6 @@ NIFTY_HTML = r"""<!DOCTYPE html>
       async function fetchTradingViewDirect(sid, isInitial) { const tvCols = TIMEFRAMES.filter(t => t.tvCol).map(t => t.tvCol); const res = await fetchWithTimeout('https://scanner.tradingview.com/india/scan', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ symbols: { tickers: STOCKS.map(s => `NSE:${s.tv}`), query: { types: [] } }, columns: ['name', 'close', 'change', 'change_abs', ...tvCols] }) }, 9000); if (!res.ok) throw new Error('TV HTTP ' + res.status); const json = await res.json(); if (sid !== state.sessionId || !json?.data?.length) throw new Error('Empty TV'); json.data.forEach(row => { const sym = TV_TO_SYM.get(row.s); const s = state.stocks.get(sym); const d = row.d; if (!s || !Array.isArray(d)) return; const oldRsi = s.rsi; s.price = typeof d[1] === 'number' ? d[1] : null; s.changePct = typeof d[2] === 'number' ? d[2] : null; s.prevClose = (s.price != null && typeof d[3] === 'number') ? s.price - d[3] : null; const m = createEmptyRsiMap(); TIMEFRAMES.forEach((tf, i) => { if (tf.tvCol && typeof d[4 + i] === 'number') m[tf.key] = Math.round(d[4 + i] * 100) / 100; }); s.rsiMap = m; s.rsi = s.rsiMap[state.timeframe]; s.loaded = s.price != null; checkRsiAlerts(s, oldRsi, isInitial); }); }
       async function runScan(isInitial = false) { if (state.isScanning && !isInitial) return; const sid = isInitial ? ++state.sessionId : state.sessionId; state.isScanning = true; try { await fetchTradingViewDirect(sid, isInitial); state.scans++; state.lastUpdateDate = new Date(); document.getElementById('liveDot').className = 'status-dot live pulse-dot'; document.getElementById('liveFeedName').textContent = `LIVE • TV NSE ${tfDisplayLabel(state.timeframe)}`; renderAll(); } catch (e) { document.getElementById('liveDot').className = 'status-dot error'; document.getElementById('liveFeedName').textContent = 'RECONNECTING...'; } finally { state.isScanning = false; } }
       function renderAll() { const loaded = Array.from(state.stocks.values()).filter(s => s.loaded && s.rsi != null); loaded.slice().sort((a, b) => a.rsi - b.rsi).forEach((s, i) => s.rsiRank = i + 1); const longs = loaded.filter(s => s.rsi < state.longTh); const shorts = loaded.filter(s => s.rsi > state.shortTh); document.getElementById('liveLoadedCount').textContent = `${loaded.length}/50`; document.getElementById('liveScanCount').textContent = state.scans; const ist = fmtIST(state.lastUpdateDate); document.getElementById('liveTimestamp').textContent = ist; document.getElementById('kpiSyncTime').textContent = ist; document.getElementById('kpiLongCount').textContent = longs.length; document.getElementById('kpiShortCount').textContent = shorts.length; document.getElementById('tabSignalsBadge').textContent = longs.length + shorts.length; document.getElementById('tabTradesBadge').textContent = state.trades.length; if (loaded.length) { const srt = loaded.slice().sort((a, b) => a.rsi - b.rsi); document.getElementById('kpiOversoldSym').textContent = srt[0].symbol; document.getElementById('kpiOversoldRsi').textContent = srt[0].rsi.toFixed(2); document.getElementById('kpiOversoldPrice').textContent = `LTP: ₹${fmtPrice(srt[0].price)}`; const hi = srt[srt.length - 1]; document.getElementById('kpiOverboughtSym').textContent = hi.symbol; document.getElementById('kpiOverboughtRsi').textContent = hi.rsi.toFixed(2); document.getElementById('kpiOverboughtPrice').textContent = `LTP: ₹${fmtPrice(hi.price)}`; } const q = state.searchQuery.trim().toLowerCase(); let list = Array.from(state.stocks.values()).filter(s => (!q || s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)) && (state.sectorFilter === 'ALL' || s.sector === state.sectorFilter) && (state.signalFilter === 'ALL' || getSignal(s.rsi).label === state.signalFilter)); list.sort((a, b) => (a.rsi ?? 999) - (b.rsi ?? 999)); document.getElementById('screenerTbody').innerHTML = list.map(s => { const sig = getSignal(s.rsi); return `<tr class="${sig.label === 'LONG' ? 'row-long' : sig.label === 'SHORT' ? 'row-short' : ''}"><td class="mono text-dim">#${s.sr}</td><td><strong class="mono">${s.symbol}</strong><div class="text-muted" style="font-size:11px;">${s.name}</div></td><td><span class="sector-tag">${s.sector}</span></td><td class="text-right mono" style="font-weight:700;">${fmtPrice(s.price)}</td><td class="text-right mono text-muted">${fmtPrice(s.prevClose)}</td><td class="text-right mono ${s.changePct >= 0 ? 'text-green' : 'text-red'}">${fmtPct(s.changePct)}</td><td class="mono">${s.rsi != null ? s.rsi.toFixed(2) : '--'}</td><td class="text-center"><span class="badge ${sig.cls}">${sig.label}</span></td><td class="text-center mono">${s.rsiRank ? '#' + s.rsiRank : '--'}</td><td class="text-right mono text-green">${fmtPrice(s.price ? s.price * 1.0628 : null)}</td><td class="text-right mono text-amber">${fmtPrice(s.price ? s.price * 0.9686 : null)}</td><td class="text-center"><button type="button" class="btn btn-long" data-quick-sym="${s.symbol}" data-quick-side="LONG">+ Long</button> <button type="button" class="btn btn-short" data-quick-sym="${s.symbol}" data-quick-side="SHORT">+ Short</button></td></tr>`; }).join(''); }
-      // =========================================================================
-      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
-      // =========================================================================
       (function initJarvisSimulation() {
         const canvas = document.getElementById('sciFiBgCanvas');
         if (!canvas) return;
@@ -3040,7 +3092,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Top 10 Crypto Futures RSI + VWAP + Funding — J.A.R.V.I.S. 2s Terminal</title>
+  <title>Top 10 Crypto Scalping &amp; Futures Terminal (VWAP + 9/21 EMA + 14-RSI) — J.A.R.V.I.S.</title>
   <style>
     :root {
       --bg-main: #030914; --bg-header: rgba(5, 13, 27, 0.72); --bg-card: rgba(8, 18, 36, 0.34);
@@ -3059,11 +3111,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     html, body { color: var(--text-main); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; min-height: 100vh; }
     .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
-    .text-cyan { color: var(--cyan-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
+    .text-cyan { color: var(--cyan-light); } .text-purple { color: var(--purple-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
     .text-right { text-align: right; } .text-center { text-align: center; } .hidden { display: none !important; }
     @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
-    /* ==================== JARVIS HOLOGRAPHIC HUD & TRANSPARENT GLASS ==================== */
     html, body {
       background-color: #030914 !important;
       background-image:
@@ -3138,6 +3189,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     tbody tr {
       background: rgba(8, 18, 36, 0.18);
       border-bottom: 1px solid rgba(56, 189, 248, 0.11) !important;
+      transition: background-color 0.15s;
     }
 
     tbody tr:hover {
@@ -3145,11 +3197,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     }
 
     tbody tr.row-long {
-      background: rgba(16, 185, 129, 0.11) !important;
+      background: rgba(16, 185, 129, 0.13) !important;
     }
 
     tbody tr.row-short {
-      background: rgba(244, 63, 94, 0.11) !important;
+      background: rgba(244, 63, 94, 0.13) !important;
     }
 
     .brand-icon {
@@ -3159,7 +3211,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       border: 1px solid rgba(103, 232, 249, 0.75) !important;
       box-shadow: 0 0 22px rgba(6, 182, 212, 0.55), inset 0 0 12px rgba(103, 232, 249, 0.35) !important;
     }
-    .container { max-width: 1740px; margin: 0 auto; padding: 0 16px; }
+    .container { max-width: 1780px; margin: 0 auto; padding: 0 16px; }
     .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -3173,17 +3225,21 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .live-sep { color: var(--border-light); }
     .controls-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(56, 189, 248, 0.16); }
     .control-group { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
-    input[type="number"] { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 52px; text-align: center; font-weight: 700; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); text-decoration: none; }
+    input[type="number"] { background: rgba(6, 15, 30, 0.75); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 52px; text-align: center; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); text-decoration: none; transition: all 0.15s; }
+    .btn:hover { background: rgba(14, 116, 144, 0.35); border-color: #67e8f9; }
     .btn-tf { padding: 5px 10px; border: 1px solid transparent; background: transparent; color: var(--text-muted); border-radius: 6px; }
     .btn-tf.active { background: var(--green-bg); color: #34d399; border-color: var(--green-border); }
     .btn-vwap.active { background: var(--amber-bg); color: #fcd34d; border-color: var(--amber-border); }
     .btn-funding.active { background: var(--purple-bg); color: var(--purple-light); border-color: var(--purple-border); }
+    .btn-scalp.active { background: var(--green-bg); color: #6ee7b7; border-color: var(--green-border); }
     .btn-tg.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
     .btn-long { padding: 4px 8px; font-size: 11px; background: var(--green-bg); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
     .btn-short { padding: 4px 8px; font-size: 11px; background: var(--red-bg); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
     .main { padding: 16px 0 36px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 1320px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 680px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .kpi-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; display: flex; flex-direction: column; justify-content: space-between; }
     .kpi-top { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
     .kpi-val { font-size: 20px; font-weight: 700; margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between; }
@@ -3197,7 +3253,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
     .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
     .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
-    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; }
+    .badge-cyan { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; border-color: #334155; }
     .toast-wrap { position: fixed; bottom: 16px; right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; }
     .toast { padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(8, 18, 36, 0.9); border: 1px solid var(--border-light); color: var(--text-main); }
   </style>
@@ -3209,18 +3266,18 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div class="container">
       <div class="header-inner">
         <div class="brand">
-          <div class="brand-icon" title="J.A.R.V.I.S. Quantum RVF Live Terminal">
+          <div class="brand-icon" title="J.A.R.V.I.S. Quantum Scalping & Futures Terminal">
             <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="#04131c" stroke="#67e8f9" stroke-width="1.5"/><circle cx="18" cy="18" r="10.5" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4 3"/><path d="M9 21L14 15L18.5 19.5L27 11" stroke="#67e8f9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="11" r="2.5" fill="#10b981"/></svg>
           </div>
           <div>
             <div class="brand-title">
-              <span>Top 10 Crypto Futures RSI + VWAP + Funding</span>
+              <span>Top 10 Crypto Scalping &amp; Futures Terminal (VWAP + 9/21 EMA + 14-RSI)</span>
               <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
               <span class="pill pill-cloud mono">J.A.R.V.I.S. • 2S RENDER</span>
               <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50 NSE</a>
               <a href="/portfolio" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--purple-border); color: var(--purple-light);">💼 Live Portfolio →</a>
             </div>
-            <div class="brand-sub">Har 2 Second Live Scan (Dual TG Bot + Group Support) • Wilder's 14 RSI + Daily UTC VWAP + 8h Funding Filter</div>
+            <div class="brand-sub">Har 2 Second Live Scan • Session VWAP (UTC) + 9/21 EMA Pullback Engine + Wilder's 14 RSI + 8h Funding + 24/7 TG Bot</div>
           </div>
         </div>
         <div class="live-bar">
@@ -3242,6 +3299,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <div class="control-group"><label for="shortThInput" class="text-red">Short RSI &gt;</label><input id="shortThInput" type="number" min="45" max="90" value="70" class="mono text-red" /></div>
         <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
         <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
+        <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 9/21 EMA Scalp TG: ON</span></button>
         <button id="tgTestBtn" type="button" class="btn btn-tg active"><span id="tgStatusLabel">✈️ 24/7 TG Bot: Test</span></button>
       </div>
     </div>
@@ -3249,19 +3307,20 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <main class="main container">
     <section class="kpi-grid">
       <div class="kpi-card"><div class="kpi-top"><span>Render 2s Sync</span><span id="kpiTfTag" class="mono text-cyan">15m</span></div><div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div><div id="kpiFeedDetail" class="kpi-sub">Loading...</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span>Long Signals</span><span class="text-green">LIVE</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Oversold + VWAP + Funding</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span>Short Signals</span><span class="text-red">LIVE</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Overbought + VWAP + Funding</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Scalping Pullbacks</span><span class="text-cyan">9/21 EMA + VWAP</span></div><div class="kpi-val mono"><span id="kpiScalpCount" class="text-cyan">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div id="kpiScalpSub" class="kpi-sub">Scanning pullback zone...</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>RSI Long Signals</span><span class="text-green">LIVE</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Oversold + VWAP + Funding</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>RSI Short Signals</span><span class="text-red">LIVE</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Overbought + VWAP + Funding</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>Most Oversold</span><span class="text-green mono">Lowest RSI</span></div><div class="kpi-val"><span id="kpiOversoldCoin" style="font-size: 16px;">--</span><span id="kpiOversoldRsi" class="mono text-green">--</span></div><div id="kpiOversoldPrice" class="kpi-sub mono">Mark: --</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>Most Overbought</span><span class="text-red mono">Highest RSI</span></div><div class="kpi-val"><span id="kpiOverboughtCoin" style="font-size: 16px;">--</span><span id="kpiOverboughtRsi" class="mono text-red">--</span></div><div id="kpiOverboughtPrice" class="kpi-sub mono">Mark: --</div></div>
     </section>
-    <div class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Pair</th><th class="text-right">Mark Price</th><th class="text-right">Daily VWAP (UTC)</th><th class="text-right">Candle Chg %</th><th class="text-right">8h Funding</th><th class="text-right">14-RSI</th><th class="text-center">Signal</th><th class="text-right">Target ±6.28%</th><th class="text-right">Hard SL ±2.0%</th><th class="text-center">Portfolio Trade</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="11" style="padding:28px;text-align:center;">Connecting to 2-second Render feed...</td></tr></tbody></table></div></div>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Pair</th><th class="text-right">Mark Price</th><th class="text-right">Session VWAP (UTC)</th><th class="text-right">9 / 21 EMA</th><th class="text-right">14-RSI</th><th class="text-center">Scalp Setup (EMA+VWAP)</th><th class="text-center">RSI Signal</th><th class="text-right">8h Funding</th><th class="text-right">Target ±6.28%</th><th class="text-right">Hard SL ±2.0%</th><th class="text-center">Portfolio Trade</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="12" style="padding:28px;text-align:center;">Connecting to 2-second Render feed...</td></tr></tbody></table></div></div>
   </main>
   <div id="toastWrap" class="toast-wrap"></div>
   <script>
     (() => {
       'use strict';
       const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
-      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, vwap_filter: true, funding_filter: true };
+      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, vwap_filter: true, funding_filter: true, scalp_alerts: true };
       let coins = [];
       const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
       const fmtPct = v => v == null ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
@@ -3282,10 +3341,16 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === cfg.timeframe));
             document.getElementById('vwapFilterLabel').textContent = `⚡ VWAP Filter: ${cfg.vwap_filter ? 'ON' : 'OFF'}`;
             document.getElementById('fundingFilterLabel').textContent = `💰 Funding Filter: ${cfg.funding_filter ? 'ON' : 'OFF'}`;
+            document.getElementById('scalpAlertLabel').textContent = `🎯 9/21 EMA Scalp TG: ${cfg.scalp_alerts ? 'ON' : 'OFF'}`;
           }
           if (Array.isArray(d.coins)) {
             coins = d.coins;
             const valid = coins.filter(c => c.rsi != null);
+            const scalpHits = valid.filter(c => c.scalpCode === 'SCALP_LONG' || c.scalpCode === 'SCALP_SHORT');
+            document.getElementById('kpiScalpCount').textContent = scalpHits.length;
+            document.getElementById('kpiScalpSub').textContent = scalpHits.length
+              ? scalpHits.map(x => `${x.coin} (${x.scalpCode === 'SCALP_LONG' ? 'LONG' : 'SHORT'})`).join(', ')
+              : 'Waiting for 21 EMA / VWAP pullback';
             document.getElementById('kpiLongCount').textContent = valid.filter(c => c.signal === 'LONG').length;
             document.getElementById('kpiShortCount').textContent = valid.filter(c => c.signal === 'SHORT').length;
             if (valid.length) {
@@ -3298,22 +3363,55 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
               document.getElementById('kpiOverboughtRsi').textContent = h.rsi.toFixed(2);
               document.getElementById('kpiOverboughtPrice').textContent = 'Mark: $' + fmtP(h.price);
             }
-            const sorted = coins.slice().sort((a, b) => (a.rsi ?? 999) - (b.rsi ?? 999));
+            const priority = { SCALP_LONG: 0, SCALP_SHORT: 0, LONG: 1, SHORT: 1, BULL_TREND: 2, BEAR_TREND: 2, CHOP: 3, WAIT: 4 };
+            const sorted = coins.slice().sort((a, b) => {
+              const pa = priority[a.scalpCode] ?? 4;
+              const pb = priority[b.scalpCode] ?? 4;
+              if (pa !== pb) return pa - pb;
+              return (a.rsi ?? 999) - (b.rsi ?? 999);
+            });
             document.getElementById('screenerTbody').innerHTML = sorted.map(c => {
-              const isShort = c.signal === 'SHORT';
+              const isShort = c.signal === 'SHORT' || c.scalpCode === 'SCALP_SHORT';
               const tp = c.price ? (isShort ? c.price * 0.9372 : c.price * 1.0628) : null;
               const sl = c.price ? (isShort ? c.price * 1.02 : c.price * 0.98) : null;
               const cls = c.signal === 'LONG' ? 'badge-long' : c.signal === 'SHORT' ? 'badge-short' : 'badge-wait';
-              const rowCls = c.signal === 'LONG' ? 'row-long' : c.signal === 'SHORT' ? 'row-short' : '';
-              return `<tr class="${rowCls}"><td class="mono text-dim">#${c.sr}</td><td><strong class="mono">${c.pair}</strong></td><td class="text-right mono" style="font-weight:700;">$${fmtP(c.price)}</td><td class="text-right mono text-cyan">$${fmtP(c.vwap)} (${fmtPct(c.vwapDiffPct)})</td><td class="text-right mono ${c.changePct >= 0 ? 'text-green' : 'text-red'}">${fmtPct(c.changePct)}</td><td class="text-right mono">${c.funding != null ? (c.funding * 100).toFixed(4) + '%' : '—'}</td><td class="text-right mono" style="font-weight:700;">${c.rsi != null ? c.rsi.toFixed(2) : '--'}</td><td class="text-center"><span class="badge ${cls}">${c.signal}</span></td><td class="text-right mono text-green">$${fmtP(tp)}</td><td class="text-right mono text-red">$${fmtP(sl)}</td><td class="text-center"><button type="button" class="btn btn-long" data-add-c="${c.coin}" data-add-s="LONG">+ Long</button> <button type="button" class="btn btn-short" data-add-c="${c.coin}" data-add-s="SHORT">+ Short</button></td></tr>`;
+              const scalpCls = c.scalpCode === 'SCALP_LONG' ? 'badge-long'
+                : c.scalpCode === 'SCALP_SHORT' ? 'badge-short'
+                : c.scalpCode === 'BULL_TREND' || c.scalpCode === 'BEAR_TREND' ? 'badge-cyan'
+                : 'badge-neutral';
+              const rowCls = (c.signal === 'LONG' || c.scalpCode === 'SCALP_LONG') ? 'row-long'
+                : (c.signal === 'SHORT' || c.scalpCode === 'SCALP_SHORT') ? 'row-short'
+                : '';
+              const emaBull = c.ema9 != null && c.ema21 != null && c.ema9 >= c.ema21;
+              return `<tr class="${rowCls}">
+                <td class="mono text-dim">#${c.sr}</td>
+                <td><strong class="mono">${c.pair}</strong><div class="text-muted" style="font-size:11px;">${c.name}</div></td>
+                <td class="text-right mono" style="font-weight:700;">$${fmtP(c.price)}</td>
+                <td class="text-right mono ${c.vwapDiffPct >= 0 ? 'text-green' : 'text-red'}">$${fmtP(c.vwap)} (${fmtPct(c.vwapDiffPct)})</td>
+                <td class="text-right mono">
+                  <span class="${emaBull ? 'text-green' : 'text-red'}">$${fmtP(c.ema9)}</span>
+                  <span class="text-dim"> / </span>
+                  <span class="text-amber">$${fmtP(c.ema21)}</span>
+                </td>
+                <td class="text-right mono" style="font-weight:700;">${c.rsi != null ? c.rsi.toFixed(2) : '--'}</td>
+                <td class="text-center"><span class="badge ${scalpCls}">${c.scalpLabel || 'WAIT'}</span></td>
+                <td class="text-center"><span class="badge ${cls}">${c.signal}</span></td>
+                <td class="text-right mono">${c.funding != null ? (c.funding * 100).toFixed(4) + '%' : '—'}</td>
+                <td class="text-right mono text-green">$${fmtP(tp)}</td>
+                <td class="text-right mono text-red">$${fmtP(sl)}</td>
+                <td class="text-center"><button type="button" class="btn btn-long" data-add-c="${c.coin}" data-add-s="LONG">+ Long</button> <button type="button" class="btn btn-short" data-add-c="${c.coin}" data-add-s="SHORT">+ Short</button></td>
+              </tr>`;
             }).join('');
           }
         } catch {}
       }
       async function pushCfg(patch) { await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...patch, rescan: true, force_history: true }) }); poll(); }
       document.querySelectorAll('.btn-tf').forEach(b => b.addEventListener('click', () => pushCfg({ timeframe: b.dataset.tf })));
+      document.getElementById('longThInput').addEventListener('change', e => pushCfg({ long_th: parseFloat(e.target.value) }));
+      document.getElementById('shortThInput').addEventListener('change', e => pushCfg({ short_th: parseFloat(e.target.value) }));
       document.getElementById('vwapFilterToggleBtn').addEventListener('click', () => pushCfg({ vwap_filter: !cfg.vwap_filter }));
       document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => pushCfg({ funding_filter: !cfg.funding_filter }));
+      document.getElementById('scalpAlertToggleBtn').addEventListener('click', () => pushCfg({ scalp_alerts: !cfg.scalp_alerts }));
       document.getElementById('tgTestBtn').addEventListener('click', async () => { const r = await fetch('/api/test-tg', { method: 'POST' }); const d = await r.json(); toast(d.ok ? 'Test sent to Render TG Bots!' : 'Error: ' + d.error); });
       document.addEventListener('click', e => {
         const b = e.target.closest('[data-add-c]');
@@ -3326,9 +3424,6 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           toast(`Added ${b.dataset.addS} ${c.pair} ($100 • 5x) to Portfolio!`);
         }
       });
-      // =========================================================================
-      // J.A.R.V.I.S. HOLOGRAPHIC ARC REACTOR & TELEMETRY SIMULATION
-      // =========================================================================
       (function initJarvisSimulation() {
         const canvas = document.getElementById('sciFiBgCanvas');
         if (!canvas) return;
@@ -3641,6 +3736,8 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
                     CONFIG["vwap_filter"] = bool(body["vwap_filter"])
                 if "funding_filter" in body:
                     CONFIG["funding_filter"] = bool(body["funding_filter"])
+                if "scalp_alerts" in body:
+                    CONFIG["scalp_alerts"] = bool(body["scalp_alerts"])
                 cfg_copy = dict(CONFIG)
 
             if body.get("force_history"):
@@ -3654,10 +3751,11 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             with STATE_LOCK:
                 cfg = dict(CONFIG)
             ok, err = send_telegram(
-                f"✅ <b>J.A.R.V.I.S. 2-Second Live Web Terminal Test OK!</b>\n"
+                f"✅ <b>J.A.R.V.I.S. 2-Second Live Scalping Terminal Test OK!</b>\n"
                 f"TF: <b>{cfg['timeframe'].upper()}</b> | Long &lt; <b>{cfg['long_th']}</b> | Short &gt; <b>{cfg['short_th']}</b>\n"
-                f"VWAP Filter: <b>{'ON' if cfg['vwap_filter'] else 'OFF'}</b> | "
-                f"Funding Filter: <b>{'ON' if cfg['funding_filter'] else 'OFF'}</b>\n"
+                f"VWAP: <b>{'ON' if cfg['vwap_filter'] else 'OFF'}</b> | "
+                f"Funding: <b>{'ON' if cfg['funding_filter'] else 'OFF'}</b> | "
+                f"9/21 EMA Scalp: <b>{'ON' if cfg['scalp_alerts'] else 'OFF'}</b>\n"
                 f"⏰ {now_ist_str()}"
             )
             self._send_json({"ok": ok, "error": None if ok else err})
@@ -3747,8 +3845,8 @@ def main():
 
     if SEND_STARTUP_MSG:
         send_telegram(
-            f"✅ <b>J.A.R.V.I.S. 3-Page Live Terminal Started!</b>\n"
-            f"Crypto: <b>/</b> | Nifty 50: <b>/nifty</b> | Portfolio: <b>/portfolio</b>\n"
+            f"✅ <b>J.A.R.V.I.S. 3-Page Live Scalping Terminal Started!</b>\n"
+            f"Crypto (VWAP+9/21 EMA+RSI): <b>/</b> | Nifty 50: <b>/nifty</b> | Portfolio: <b>/portfolio</b>\n"
             f"⏰ {now_ist_str()}"
         )
 
