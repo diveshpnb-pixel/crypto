@@ -33,6 +33,7 @@ CONFIG = {
     "timeframe": os.getenv("TIMEFRAME", "15m").strip() or "15m",
     "long_th": float(os.getenv("LONG_RSI_TH", "35")),
     "short_th": float(os.getenv("SHORT_RSI_TH", "70")),
+    "pullback_pct": float(os.getenv("PULLBACK_PCT", "0.20")),
     "vwap_filter": os.getenv("VWAP_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "funding_filter": os.getenv("FUNDING_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "scalp_alerts": os.getenv("SCALP_ALERTS_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
@@ -69,7 +70,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Crypto-Nifty-Portfolio/8.0"})
+SESSION.headers.update({"User-Agent": "JARVIS-Crypto-Nifty-Portfolio/8.1"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -404,7 +405,7 @@ def fetch_live_prices_batch() -> tuple[str, dict[str, float]]:
 
 
 # =============================================================================
-# 5. SIGNAL LOGIC (RSI + VWAP + FUNDING + 9/21 EMA SCALPING) & DUAL TG
+# 5. SIGNAL LOGIC (RSI + VWAP + FUNDING + STRICT 15m 9/21 EMA SCALPING) & TG
 # =============================================================================
 def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -> str:
     if rsi is None or price is None:
@@ -422,26 +423,30 @@ def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -
     return "WAIT"
 
 
-def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float) -> dict:
+def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float, cfg: dict) -> dict:
     """
-    Intraday & Scalping (5m - 15m) Pullback Engine:
-    - Trend Filter: Price vs Session VWAP & 9 EMA vs 21 EMA
-    - Pullback Zone: Price within +-0.40% of 21 EMA or Session VWAP
-    - Momentum Filter: RSI(14) > 45 for Bullish pullback, RSI(14) < 55 for Bearish rejection
+    Tightened 15m Scalping Pullback Engine:
+    - Trend Filter: Price vs Session VWAP & 9 EMA vs 21 EMA (plus minimum EMA separation to avoid flat chop)
+    - Pullback Zone: Price within +-cfg['pullback_pct'] (default 0.20%) of 21 EMA or Session VWAP
+    - Strict RSI Zone: 48.0 <= RSI <= 65.0 for Long Pullback; 35.0 <= RSI <= 52.0 for Short Pullback
     """
-    if None in (price, rsi, vwap, ema9, ema21) or price <= 0:
+    if None in (price, rsi, vwap, ema9, ema21) or price <= 0 or ema21 <= 0:
         return {"code": "WAIT", "label": "SYNCING...", "trend": "NEUTRAL"}
 
-    bull_trend = (price > vwap) and (ema9 > ema21)
-    bear_trend = (price < vwap) and (ema9 < ema21)
+    pb_zone = float(cfg.get("pullback_pct", 0.20))
+    ema_spread_pct = abs(ema9 - ema21) / ema21 * 100.0
+    not_flat = ema_spread_pct >= 0.02
+
+    bull_trend = (price > vwap) and (ema9 > ema21) and not_flat
+    bear_trend = (price < vwap) and (ema9 < ema21) and not_flat
 
     dist_ema21_pct = abs(price - ema21) / price * 100.0
     dist_vwap_pct = abs(price - vwap) / price * 100.0
-    near_zone = (dist_ema21_pct <= 0.40) or (dist_vwap_pct <= 0.40)
+    near_zone = (dist_ema21_pct <= pb_zone) or (dist_vwap_pct <= pb_zone)
 
-    if bull_trend and near_zone and (44.0 <= rsi <= 68.0):
+    if bull_trend and near_zone and (48.0 <= rsi <= 65.0):
         return {"code": "SCALP_LONG", "label": "LONG • PULLBACK", "trend": "BULL"}
-    if bear_trend and near_zone and (32.0 <= rsi <= 56.0):
+    if bear_trend and near_zone and (35.0 <= rsi <= 52.0):
         return {"code": "SCALP_SHORT", "label": "SHORT • PULLBACK", "trend": "BEAR"}
     if bull_trend:
         return {"code": "BULL_TREND", "label": "BULL TREND", "trend": "BULL"}
@@ -517,7 +522,7 @@ def format_signal_msg(item: dict, side: str, price: float, rsi: float, vwap: flo
     return (
         f"{icon} <b>{side}: {item['pair']}</b> ({cfg['timeframe'].upper()}){filter_tag}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"⚡ <b>Scalp Setup:</b> {scalp_lbl}\n"
+        f"⚡ <b>Scalp Setup:</b> {scalp_lbl} (±{cfg['pullback_pct']:.2f}%)\n"
         f"📊 <b>RSI (14):</b> {rsi:.2f}\n"
         f"💵 <b>Mark Price:</b> ${fmt_price(price)}\n"
         f"📈 <b>Daily VWAP:</b> ${fmt_price(vwap)} ({vwap_pos} {fmt_pct(vwap_diff)})\n"
@@ -672,7 +677,7 @@ def scanner_worker():
             funding = c.get("funding")
 
             sig = evaluate_signal(price, rsi, vwap, funding, cfg)
-            scalp = evaluate_scalp_setup(price, rsi, vwap, ema9, ema21)
+            scalp = evaluate_scalp_setup(price, rsi, vwap, ema9, ema21, cfg)
             feed_name = batch_feed or c.get("source", "Live")
 
             scanned_rows.append({
@@ -696,7 +701,6 @@ def scanner_worker():
                 "source": feed_name,
             })
 
-            # Trigger Telegram alert on either RSI extreme OR 9/21 EMA + VWAP Scalping Pullback
             alert_side = None
             if sig in ("LONG", "SHORT"):
                 alert_side = f"{sig} SIGNAL"
@@ -3225,7 +3229,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .live-sep { color: var(--border-light); }
     .controls-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(56, 189, 248, 0.16); }
     .control-group { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
-    input[type="number"] { background: rgba(6, 15, 30, 0.75); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 52px; text-align: center; font-weight: 700; }
+    input[type="number"] { background: rgba(6, 15, 30, 0.75); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 54px; text-align: center; font-weight: 700; }
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); text-decoration: none; transition: all 0.15s; }
     .btn:hover { background: rgba(14, 116, 144, 0.35); border-color: #67e8f9; }
     .btn-tf { padding: 5px 10px; border: 1px solid transparent; background: transparent; color: var(--text-muted); border-radius: 6px; }
@@ -3277,7 +3281,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
               <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50 NSE</a>
               <a href="/portfolio" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--purple-border); color: var(--purple-light);">💼 Live Portfolio →</a>
             </div>
-            <div class="brand-sub">Har 2 Second Live Scan • Session VWAP (UTC) + 9/21 EMA Pullback Engine + Wilder's 14 RSI + 8h Funding + 24/7 TG Bot</div>
+            <div class="brand-sub">Har 2 Second Live Scan • Session VWAP (UTC) + Strict 15m 9/21 EMA Pullback Engine + Wilder's 14 RSI + 8h Funding + 24/7 TG Bot</div>
           </div>
         </div>
         <div class="live-bar">
@@ -3297,6 +3301,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         </div>
         <div class="control-group"><label for="longThInput" class="text-green">Long RSI &lt;</label><input id="longThInput" type="number" min="10" max="55" value="35" class="mono text-green" /></div>
         <div class="control-group"><label for="shortThInput" class="text-red">Short RSI &gt;</label><input id="shortThInput" type="number" min="45" max="90" value="70" class="mono text-red" /></div>
+        <div class="control-group"><label for="pullbackInput" class="text-cyan">Pullback ± %</label><input id="pullbackInput" type="number" step="0.05" min="0.05" max="2.0" value="0.20" class="mono text-cyan" /></div>
         <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
         <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
         <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 9/21 EMA Scalp TG: ON</span></button>
@@ -3307,7 +3312,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <main class="main container">
     <section class="kpi-grid">
       <div class="kpi-card"><div class="kpi-top"><span>Render 2s Sync</span><span id="kpiTfTag" class="mono text-cyan">15m</span></div><div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div><div id="kpiFeedDetail" class="kpi-sub">Loading...</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span>Scalping Pullbacks</span><span class="text-cyan">9/21 EMA + VWAP</span></div><div class="kpi-val mono"><span id="kpiScalpCount" class="text-cyan">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div id="kpiScalpSub" class="kpi-sub">Scanning pullback zone...</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Scalping Pullbacks</span><span id="kpiPbTag" class="text-cyan mono">±0.20%</span></div><div class="kpi-val mono"><span id="kpiScalpCount" class="text-cyan">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div id="kpiScalpSub" class="kpi-sub">RSI 48–65 L / 35–52 S</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>RSI Long Signals</span><span class="text-green">LIVE</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Oversold + VWAP + Funding</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>RSI Short Signals</span><span class="text-red">LIVE</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Overbought + VWAP + Funding</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>Most Oversold</span><span class="text-green mono">Lowest RSI</span></div><div class="kpi-val"><span id="kpiOversoldCoin" style="font-size: 16px;">--</span><span id="kpiOversoldRsi" class="mono text-green">--</span></div><div id="kpiOversoldPrice" class="kpi-sub mono">Mark: --</div></div>
@@ -3320,7 +3325,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     (() => {
       'use strict';
       const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
-      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, vwap_filter: true, funding_filter: true, scalp_alerts: true };
+      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, pullback_pct: 0.20, vwap_filter: true, funding_filter: true, scalp_alerts: true };
       let coins = [];
       const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
       const fmtPct = v => v == null ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
@@ -3336,8 +3341,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           document.getElementById('kpiFeedDetail').textContent = d.active_feed || 'Connected';
           if (d.config) {
             cfg = d.config;
+            const pb = Number(cfg.pullback_pct ?? 0.20);
             document.getElementById('headerTfBadge').textContent = cfg.timeframe.toUpperCase();
             document.getElementById('kpiTfTag').textContent = cfg.timeframe;
+            document.getElementById('kpiPbTag').textContent = `±${pb.toFixed(2)}%`;
+            if (document.activeElement !== document.getElementById('pullbackInput')) {
+              document.getElementById('pullbackInput').value = pb.toFixed(2);
+            }
             document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === cfg.timeframe));
             document.getElementById('vwapFilterLabel').textContent = `⚡ VWAP Filter: ${cfg.vwap_filter ? 'ON' : 'OFF'}`;
             document.getElementById('fundingFilterLabel').textContent = `💰 Funding Filter: ${cfg.funding_filter ? 'ON' : 'OFF'}`;
@@ -3350,7 +3360,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             document.getElementById('kpiScalpCount').textContent = scalpHits.length;
             document.getElementById('kpiScalpSub').textContent = scalpHits.length
               ? scalpHits.map(x => `${x.coin} (${x.scalpCode === 'SCALP_LONG' ? 'LONG' : 'SHORT'})`).join(', ')
-              : 'Waiting for 21 EMA / VWAP pullback';
+              : `RSI 48–65 L / 35–52 S (±${Number(cfg.pullback_pct ?? 0.20).toFixed(2)}%)`;
             document.getElementById('kpiLongCount').textContent = valid.filter(c => c.signal === 'LONG').length;
             document.getElementById('kpiShortCount').textContent = valid.filter(c => c.signal === 'SHORT').length;
             if (valid.length) {
@@ -3409,6 +3419,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       document.querySelectorAll('.btn-tf').forEach(b => b.addEventListener('click', () => pushCfg({ timeframe: b.dataset.tf })));
       document.getElementById('longThInput').addEventListener('change', e => pushCfg({ long_th: parseFloat(e.target.value) }));
       document.getElementById('shortThInput').addEventListener('change', e => pushCfg({ short_th: parseFloat(e.target.value) }));
+      document.getElementById('pullbackInput').addEventListener('change', e => {
+        const v = parseFloat(e.target.value);
+        if (!isNaN(v) && v >= 0.05 && v <= 2.0) {
+          pushCfg({ pullback_pct: v });
+          toast(`Pullback zone set to ±${v.toFixed(2)}%`);
+        }
+      });
       document.getElementById('vwapFilterToggleBtn').addEventListener('click', () => pushCfg({ vwap_filter: !cfg.vwap_filter }));
       document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => pushCfg({ funding_filter: !cfg.funding_filter }));
       document.getElementById('scalpAlertToggleBtn').addEventListener('click', () => pushCfg({ scalp_alerts: !cfg.scalp_alerts }));
@@ -3732,6 +3749,10 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
                     v = float(body["short_th"])
                     if 45 <= v <= 90:
                         CONFIG["short_th"] = v
+                if "pullback_pct" in body:
+                    v = float(body["pullback_pct"])
+                    if 0.05 <= v <= 2.0:
+                        CONFIG["pullback_pct"] = round(v, 3)
                 if "vwap_filter" in body:
                     CONFIG["vwap_filter"] = bool(body["vwap_filter"])
                 if "funding_filter" in body:
@@ -3753,7 +3774,7 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             ok, err = send_telegram(
                 f"✅ <b>J.A.R.V.I.S. 2-Second Live Scalping Terminal Test OK!</b>\n"
                 f"TF: <b>{cfg['timeframe'].upper()}</b> | Long &lt; <b>{cfg['long_th']}</b> | Short &gt; <b>{cfg['short_th']}</b>\n"
-                f"VWAP: <b>{'ON' if cfg['vwap_filter'] else 'OFF'}</b> | "
+                f"Pullback Zone: <b>±{cfg['pullback_pct']:.2f}%</b> | VWAP: <b>{'ON' if cfg['vwap_filter'] else 'OFF'}</b>\n"
                 f"Funding: <b>{'ON' if cfg['funding_filter'] else 'OFF'}</b> | "
                 f"9/21 EMA Scalp: <b>{'ON' if cfg['scalp_alerts'] else 'OFF'}</b>\n"
                 f"⏰ {now_ist_str()}"
@@ -3846,7 +3867,7 @@ def main():
     if SEND_STARTUP_MSG:
         send_telegram(
             f"✅ <b>J.A.R.V.I.S. 3-Page Live Scalping Terminal Started!</b>\n"
-            f"Crypto (VWAP+9/21 EMA+RSI): <b>/</b> | Nifty 50: <b>/nifty</b> | Portfolio: <b>/portfolio</b>\n"
+            f"Crypto (VWAP+9/21 EMA ±{CONFIG['pullback_pct']:.2f}%+RSI): <b>/</b> | Nifty 50: <b>/nifty</b> | Portfolio: <b>/portfolio</b>\n"
             f"⏰ {now_ist_str()}"
         )
 
