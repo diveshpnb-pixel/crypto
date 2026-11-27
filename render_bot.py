@@ -3,9 +3,8 @@
 J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`bot.py`)
 ------------------------------------------------------------------------------
 - Strict 15m Pullback + Closed-Candle Momentum / Rejection Confirmation
+- Transformers-Style Live Wave Background Canvas + AI Voice Notification Alert
 - "/"          : Top 10 Crypto Futures 2-Second Live Scalping Terminal + 24/7 TG Alerts
-- "/nifty"     : Nifty 50 Route
-- "/portfolio" : Portfolio Route
 """
 
 import os
@@ -69,7 +68,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.0"})
+SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.1"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -220,11 +219,6 @@ def compute_live_vwap(cache_entry: dict, live_price: float):
 
 
 def evaluate_closed_candle_confirmation(last_closed: dict, prev_closed: dict, last_ema21: float) -> dict:
-    """
-    Closed-candle confirmation for stricter 15m setups:
-    - Bullish bounce: last closed candle touches/dips near 21 EMA and closes green (c > o) with lower rejection wick
-    - Bearish rejection: last closed candle touches/rallies near 21 EMA and closes red (c < o) with upper rejection wick
-    """
     if not last_closed or not last_ema21 or last_ema21 <= 0:
         return {"bull_confirmed": False, "bear_confirmed": False, "note": "No candle"}
 
@@ -451,13 +445,6 @@ def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -
 
 
 def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float, candle_conf: dict, cfg: dict) -> dict:
-    """
-    Strict 15m Scalping Setup:
-    1) Trend: Price vs VWAP, 9 vs 21 EMA, and EMA spread >= 0.03%
-    2) Tight Pullback: Price within +-pullback_pct (default 0.15%) of 21 EMA or VWAP
-    3) Closed-Candle Confirmation: Lower/upper wick + candle close confirmation
-    4) Tight RSI Zone: 48..62 for Long Pullback; 38..52 for Short Pullback
-    """
     if None in (price, rsi, vwap, ema9, ema21) or price <= 0 or ema21 <= 0:
         return {"code": "WAIT", "label": "SYNCING...", "trend": "NEUTRAL"}
 
@@ -800,7 +787,7 @@ def scanner_worker():
 
 
 # =============================================================================
-# 7. EMBEDDED HTML DASHBOARD
+# 7. EMBEDDED HTML DASHBOARD (LIVE WAVE BACKGROUND + AI VOICE ALERT)
 # =============================================================================
 DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
@@ -824,11 +811,19 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       background-color: #030914;
-      background-image:
-        radial-gradient(circle at 50% 22%, rgba(0, 212, 255, 0.11), transparent 48%),
-        radial-gradient(circle at 18% 82%, rgba(16, 185, 129, 0.08), transparent 45%),
-        radial-gradient(circle at 85% 78%, rgba(56, 189, 248, 0.09), transparent 45%);
       color: var(--text-main); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; min-height: 100vh;
+    }
+    #waveBgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .header, .main, .toast-wrap {
+      position: relative;
+      z-index: 2;
     }
     .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
@@ -836,8 +831,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .text-right { text-align: right; } .text-center { text-align: center; }
     @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
-    .header { position: sticky; top: 0; z-index: 40; background: rgba(5, 13, 27, 0.72); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px); }
-    .card, .kpi-card, .control-group, .live-bar { background: rgba(8, 18, 36, 0.42); border-color: var(--border); backdrop-filter: blur(10px); }
+    .header { position: sticky; top: 0; z-index: 40; background: rgba(5, 13, 27, 0.65); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px); }
+    .card, .kpi-card, .control-group, .live-bar { background: rgba(8, 18, 36, 0.36); border-color: var(--border); backdrop-filter: blur(10px); }
     .container { max-width: 1780px; margin: 0 auto; padding: 0 16px; }
     .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
     .brand { display: flex; align-items: center; gap: 10px; }
@@ -859,6 +854,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .btn-vwap.active { background: var(--amber-bg); color: #fcd34d; border-color: var(--amber-border); }
     .btn-funding.active { background: var(--purple-bg); color: var(--purple-light); border-color: var(--purple-border); }
     .btn-scalp.active { background: var(--green-bg); color: #6ee7b7; border-color: var(--green-border); }
+    .btn-voice.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
     .btn-tg.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
     .btn-long { padding: 4px 8px; font-size: 11px; background: var(--green-bg); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
     .btn-short { padding: 4px 8px; font-size: 11px; background: var(--red-bg); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
@@ -888,6 +884,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </style>
 </head>
 <body>
+  <canvas id="waveBgCanvas"></canvas>
   <header class="header">
     <div class="container">
       <div class="header-inner">
@@ -897,9 +894,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             <div class="brand-title">
               <span>Strict 15m VWAP + 9/21 EMA + 14-RSI Terminal</span>
               <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
-              <span class="pill pill-cloud mono">WICK + CLOSE FILTER</span>
+              <span class="pill pill-cloud mono">WAVE HUD + AI VOICE</span>
             </div>
-            <div class="brand-sub">Session VWAP (UTC) + 9/21 EMA (±0.15%) + Closed Candle Wick/Close + Wilder's 14-RSI + 24/7 TG Bot</div>
+            <div class="brand-sub">Session VWAP (UTC) + 9/21 EMA (±0.15%) + Closed Candle Wick/Close + Wilder's 14-RSI + AI Voice Alerts</div>
           </div>
         </div>
         <div class="live-bar">
@@ -923,6 +920,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
         <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
         <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 Strict TG: ON</span></button>
+        <button id="voiceToggleBtn" type="button" class="btn btn-voice active"><span id="voiceLabel">🔊 AI Voice: ON</span></button>
         <button id="tgTestBtn" type="button" class="btn btn-tg active"><span>✈️ Test TG</span></button>
       </div>
     </div>
@@ -945,9 +943,44 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
       let cfg = { timeframe: '15m', long_th: 35, short_th: 70, pullback_pct: 0.15, vwap_filter: true, funding_filter: true, scalp_alerts: true };
       let coins = [];
+      let voiceEnabled = true;
+      let userUnlockedAudio = false;
+      const announcedAlertKeys = new Set();
+
       const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
       const fmtPct = v => v == null ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
-      function toast(m) { const w = document.getElementById('toastWrap'); const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; w.appendChild(e); setTimeout(() => e.remove(), 3000); }
+
+      function speakAiAlert(text) {
+        if (!voiceEnabled || !userUnlockedAudio) return;
+        try {
+          if (!('speechSynthesis' in window)) return;
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          const voices = window.speechSynthesis.getVoices() || [];
+          const preferred = voices.find(v => /en-IN|hi-IN|en-GB|Google/i.test(v.lang + ' ' + v.name));
+          if (preferred) utter.voice = preferred;
+          utter.rate = 1.02;
+          utter.pitch = 1.05;
+          utter.volume = 1.0;
+          window.speechSynthesis.speak(utter);
+        } catch {}
+      }
+
+      function toast(m, speakText = null) {
+        const w = document.getElementById('toastWrap');
+        const e = document.createElement('div');
+        e.className = 'toast';
+        e.textContent = m;
+        w.appendChild(e);
+        setTimeout(() => e.remove(), 3500);
+        if (speakText) speakAiAlert(speakText);
+      }
+
+      document.addEventListener('pointerdown', () => {
+        userUnlockedAudio = true;
+        if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+      }, { passive: true });
+
       async function poll() {
         try {
           const r = await fetch('/api/state', { cache: 'no-store' });
@@ -970,6 +1003,19 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             document.getElementById('vwapFilterLabel').textContent = `⚡ VWAP Filter: ${cfg.vwap_filter ? 'ON' : 'OFF'}`;
             document.getElementById('fundingFilterLabel').textContent = `💰 Funding Filter: ${cfg.funding_filter ? 'ON' : 'OFF'}`;
             document.getElementById('scalpAlertLabel').textContent = `🎯 Strict TG: ${cfg.scalp_alerts ? 'ON' : 'OFF'}`;
+          }
+          if (Array.isArray(d.alert_history) && d.alert_history.length > 0) {
+            const latest = d.alert_history[0];
+            const alertKey = `${latest.time}|${latest.pair}|${latest.side}|${latest.tf}`;
+            if (!announcedAlertKeys.has(alertKey)) {
+              const isFirstLoad = announcedAlertKeys.size === 0 && (d.scans_completed || 0) <= 2;
+              announcedAlertKeys.add(alertKey);
+              if (!isFirstLoad) {
+                const cleanPair = String(latest.pair || '').replace('USDT', '');
+                const spoken = `Alert! ${latest.side} on ${cleanPair} at price ${fmtP(latest.price)}, RSI ${Number(latest.rsi || 0).toFixed(1)}`;
+                toast(`🔔 ${latest.side}: ${latest.pair} ($${fmtP(latest.price)})`, spoken);
+              }
+            }
           }
           if (Array.isArray(d.coins)) {
             coins = d.coins;
@@ -1034,6 +1080,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           }
         } catch {}
       }
+
       async function pushCfg(patch) { await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...patch, rescan: true, force_history: true }) }); poll(); }
       document.querySelectorAll('.btn-tf').forEach(b => b.addEventListener('click', () => pushCfg({ timeframe: b.dataset.tf })));
       document.getElementById('longThInput').addEventListener('change', e => pushCfg({ long_th: parseFloat(e.target.value) }));
@@ -1048,7 +1095,23 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       document.getElementById('vwapFilterToggleBtn').addEventListener('click', () => pushCfg({ vwap_filter: !cfg.vwap_filter }));
       document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => pushCfg({ funding_filter: !cfg.funding_filter }));
       document.getElementById('scalpAlertToggleBtn').addEventListener('click', () => pushCfg({ scalp_alerts: !cfg.scalp_alerts }));
-      document.getElementById('tgTestBtn').addEventListener('click', async () => { const r = await fetch('/api/test-tg', { method: 'POST' }); const d = await r.json(); toast(d.ok ? 'Test sent to TG Bots!' : 'Error: ' + d.error); });
+
+      const voiceBtn = document.getElementById('voiceToggleBtn');
+      voiceBtn.addEventListener('click', () => {
+        userUnlockedAudio = true;
+        voiceEnabled = !voiceEnabled;
+        voiceBtn.classList.toggle('active', voiceEnabled);
+        document.getElementById('voiceLabel').textContent = `🔊 AI Voice: ${voiceEnabled ? 'ON' : 'OFF'}`;
+        if (voiceEnabled) speakAiAlert('AI voice alert system online');
+      });
+
+      document.getElementById('tgTestBtn').addEventListener('click', async () => {
+        userUnlockedAudio = true;
+        const r = await fetch('/api/test-tg', { method: 'POST' });
+        const d = await r.json();
+        toast(d.ok ? 'Test sent to TG Bots!' : 'Error: ' + d.error, 'Telegram alert test completed');
+      });
+
       document.addEventListener('click', e => {
         const b = e.target.closest('[data-add-c]');
         if (b) {
@@ -1057,9 +1120,114 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           const trades = JSON.parse(localStorage.getItem(STORAGE_TRADES) || '[]');
           trades.push({ id: 'ft_' + Date.now(), coin: c.coin, side: b.dataset.addS, mode: 'single', entry: c.price, margin: 100, lev: 5, rsi: c.rsi });
           localStorage.setItem(STORAGE_TRADES, JSON.stringify(trades));
-          toast(`Added ${b.dataset.addS} ${c.pair} ($100 • 5x) to Portfolio!`);
+          toast(`Added ${b.dataset.addS} ${c.pair} ($100 • 5x)`, `${b.dataset.addS} position logged for ${c.coin}`);
         }
       });
+
+      // Transformers-style live multi-layer energy wave background
+      (function initTransformersWaveBg() {
+        const canvas = document.getElementById('waveBgCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let t = 0;
+
+        function resize() {
+          w = window.innerWidth;
+          h = window.innerHeight;
+          canvas.width = Math.max(1, w) * dpr;
+          canvas.height = Math.max(1, h) * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawWaveRibbon(baseY, amp, freq, speed, phase, color, lineW, glowBlur) {
+          ctx.save();
+          ctx.beginPath();
+          const step = 6;
+          for (let x = 0; x <= w + step; x += step) {
+            const normX = x / Math.max(1, w);
+            const envelope = Math.pow(Math.sin(normX * Math.PI), 0.72);
+            const surge = 1 + 0.35 * Math.sin(normX * 7 - t * speed * 1.6);
+            const y =
+              baseY +
+              Math.sin(x * freq + t * speed + phase) * amp * envelope * surge +
+              Math.cos(x * freq * 2.15 - t * speed * 1.35 + phase) * (amp * 0.36) * envelope;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = color;
+          ctx.lineWidth = lineW;
+          if (glowBlur > 0) {
+            ctx.shadowColor = color;
+            ctx.shadowBlur = glowBlur;
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        function frame() {
+          t += 0.024;
+          ctx.clearRect(0, 0, w, h);
+
+          const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+          bgGrad.addColorStop(0, '#020712');
+          bgGrad.addColorStop(0.5, '#041124');
+          bgGrad.addColorStop(1, '#020610');
+          ctx.fillStyle = bgGrad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Subtle Cyber-Grid Lines
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.045)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let gx = 0; gx < w; gx += 64) {
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx, h);
+          }
+          for (let gy = 0; gy < h; gy += 64) {
+            ctx.moveTo(0, gy);
+            ctx.lineTo(w, gy);
+          }
+          ctx.stroke();
+
+          // Transformers-style layered plasma wave ribbons across the background
+          const midY = h * 0.52;
+          drawWaveRibbon(midY - 90, 48, 0.0065, 1.8, 0.0, 'rgba(6, 182, 212, 0.24)', 1.6, 10);
+          drawWaveRibbon(midY - 45, 72, 0.0085, 2.3, 1.1, 'rgba(103, 232, 249, 0.42)', 2.2, 16);
+          drawWaveRibbon(midY,      96, 0.0105, 2.8, 2.2, 'rgba(56, 189, 248, 0.58)', 2.8, 22);
+          drawWaveRibbon(midY + 45, 74, 0.0090, -2.1, 3.3, 'rgba(16, 185, 129, 0.44)', 2.2, 16);
+          drawWaveRibbon(midY + 90, 52, 0.0070, -1.6, 4.4, 'rgba(168, 85, 247, 0.26)', 1.6, 12);
+
+          // Traveling spark nodes along the primary energy wave
+          const sparkCount = 7;
+          for (let s = 0; s < sparkCount; s++) {
+            const prog = ((t * 0.14 + s / sparkCount) % 1 + 1) % 1;
+            const sx = prog * w;
+            const env = Math.pow(Math.sin(prog * Math.PI), 0.72);
+            const sy =
+              midY +
+              Math.sin(sx * 0.0105 + t * 2.8 + 2.2) * 96 * env +
+              Math.cos(sx * 0.0225 - t * 3.78 + 2.2) * 34 * env;
+
+            ctx.save();
+            ctx.fillStyle = s % 2 === 0 ? '#67e8f9' : '#34d399';
+            ctx.shadowColor = s % 2 === 0 ? '#06b6d4' : '#10b981';
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 2.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          requestAnimationFrame(frame);
+        }
+
+        requestAnimationFrame(frame);
+      })();
+
       poll();
       setInterval(poll, 1500);
     })();
