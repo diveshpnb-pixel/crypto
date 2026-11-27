@@ -3,8 +3,8 @@
 J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`bot.py`)
 ------------------------------------------------------------------------------
 - Strict 15m Pullback + Closed-Candle Momentum / Rejection Confirmation
-- Transformers-Style Live Wave Background Canvas + AI Voice Notification Alert
-- "/"          : Top 10 Crypto Futures 2-Second Live Scalping Terminal + 24/7 TG Alerts
+- High-Contrast Transformers-Style Live Wave Background + Transparent Rows/Columns
+- AI Voice Notification Alert + 24/7 Telegram Alerts
 """
 
 import os
@@ -68,7 +68,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.1"})
+SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.2"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -787,7 +787,7 @@ def scanner_worker():
 
 
 # =============================================================================
-# 7. EMBEDDED HTML DASHBOARD (LIVE WAVE BACKGROUND + AI VOICE ALERT)
+# 7. EMBEDDED HTML DASHBOARD (CLEAR WAVE BACKGROUND + TRANSPARENT ROWS/COLS)
 # =============================================================================
 DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
@@ -797,12 +797,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <title>Strict 15m VWAP + 9/21 EMA + 14-RSI Terminal — J.A.R.V.I.S.</title>
   <style>
     :root {
-      --bg-main: #030914; --border: rgba(56, 189, 248, 0.22); --border-light: rgba(103, 232, 249, 0.35);
-      --text-main: #f1f5f9; --text-muted: #94a3b8; --text-dim: #64748b;
-      --green: #10b981; --green-bg: rgba(16, 185, 129, 0.16); --green-border: rgba(16, 185, 129, 0.42);
-      --red: #f43f5e; --red-bg: rgba(244, 63, 94, 0.16); --red-border: rgba(244, 63, 94, 0.42);
-      --amber: #f59e0b; --amber-bg: rgba(245, 158, 11, 0.16); --amber-border: rgba(245, 158, 11, 0.38);
-      --cyan: #06b6d4; --cyan-light: #67e8f9; --cyan-bg: rgba(6, 182, 212, 0.16); --cyan-border: rgba(6, 182, 212, 0.38);
+      --bg-main: #020712; --border: rgba(56, 189, 248, 0.24); --border-light: rgba(103, 232, 249, 0.38);
+      --text-main: #f8fafc; --text-muted: #cbd5e1; --text-dim: #94a3b8;
+      --green: #10b981; --green-bg: rgba(16, 185, 129, 0.16); --green-border: rgba(16, 185, 129, 0.45);
+      --red: #f43f5e; --red-bg: rgba(244, 63, 94, 0.16); --red-border: rgba(244, 63, 94, 0.45);
+      --amber: #f59e0b; --amber-bg: rgba(245, 158, 11, 0.16); --amber-border: rgba(245, 158, 11, 0.42);
+      --cyan: #06b6d4; --cyan-light: #67e8f9; --cyan-bg: rgba(6, 182, 212, 0.16); --cyan-border: rgba(6, 182, 212, 0.42);
       --purple-light: #d8b4fe; --purple-bg: rgba(168, 85, 247, 0.16); --purple-border: rgba(168, 85, 247, 0.42);
       --radius: 10px;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
@@ -810,7 +810,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      background-color: #030914;
+      background-color: transparent;
       color: var(--text-main); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; min-height: 100vh;
     }
     #waveBgCanvas {
@@ -824,63 +824,72 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .header, .main, .toast-wrap {
       position: relative;
       z-index: 2;
+      background: transparent;
     }
-    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85); }
     .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
     .text-cyan { color: var(--cyan-light); } .text-purple { color: var(--purple-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
     .text-right { text-align: right; } .text-center { text-align: center; }
     @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
-    .header { position: sticky; top: 0; z-index: 40; background: rgba(5, 13, 27, 0.65); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px); }
-    .card, .kpi-card, .control-group, .live-bar { background: rgba(8, 18, 36, 0.36); border-color: var(--border); backdrop-filter: blur(10px); }
+    .header { position: sticky; top: 0; z-index: 40; background: rgba(4, 12, 24, 0.35); border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
+    .card, .kpi-card, .control-group, .live-bar { background: rgba(6, 15, 30, 0.14); border-color: var(--border); }
     .container { max-width: 1780px; margin: 0 auto; padding: 0 16px; }
     .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(16, 185, 129, 0.28)); border: 1px solid #67e8f9; font-weight: 800; color: #67e8f9; }
-    .brand-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(6, 182, 212, 0.18); border: 1px solid #67e8f9; font-weight: 800; color: #67e8f9; }
+    .brand-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9); }
+    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
     .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
-    .pill-tf { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .pill-cloud { background: var(--green-bg); color: #6ee7b7; border-color: var(--green-border); font-size: 10px; }
+    .pill-tf { background: rgba(6, 182, 212, 0.14); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .pill-cloud { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; border-color: var(--green-border); font-size: 10px; }
     .live-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 12px; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
     .live-sep { color: var(--border-light); }
     .controls-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(56, 189, 248, 0.16); }
     .control-group { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
-    input[type="number"] { background: rgba(6, 15, 30, 0.75); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 54px; text-align: center; font-weight: 700; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(15, 23, 42, 0.65); color: var(--text-main); text-decoration: none; }
+    input[type="number"] { background: rgba(4, 12, 24, 0.38); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; padding: 3px 4px; width: 54px; text-align: center; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: rgba(6, 15, 30, 0.25); color: var(--text-main); text-decoration: none; }
     .btn-tf { padding: 5px 10px; border: 1px solid transparent; background: transparent; color: var(--text-muted); border-radius: 6px; }
-    .btn-tf.active { background: var(--green-bg); color: #34d399; border-color: var(--green-border); }
-    .btn-vwap.active { background: var(--amber-bg); color: #fcd34d; border-color: var(--amber-border); }
-    .btn-funding.active { background: var(--purple-bg); color: var(--purple-light); border-color: var(--purple-border); }
-    .btn-scalp.active { background: var(--green-bg); color: #6ee7b7; border-color: var(--green-border); }
-    .btn-voice.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .btn-tg.active { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .btn-long { padding: 4px 8px; font-size: 11px; background: var(--green-bg); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
-    .btn-short { padding: 4px 8px; font-size: 11px; background: var(--red-bg); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
+    .btn-tf.active { background: rgba(16, 185, 129, 0.18); color: #34d399; border-color: var(--green-border); }
+    .btn-vwap.active { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border-color: var(--amber-border); }
+    .btn-funding.active { background: rgba(168, 85, 247, 0.16); color: var(--purple-light); border-color: var(--purple-border); }
+    .btn-scalp.active { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border-color: var(--green-border); }
+    .btn-voice.active { background: rgba(6, 182, 212, 0.16); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .btn-tg.active { background: rgba(6, 182, 212, 0.16); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .btn-long { padding: 4px 8px; font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
+    .btn-short { padding: 4px 8px; font-size: 11px; background: rgba(244, 63, 94, 0.15); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
     .main { padding: 16px 0 36px; }
     .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
     @media (max-width: 1320px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 680px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .kpi-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; display: flex; flex-direction: column; justify-content: space-between; }
-    .kpi-top { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85); }
     .kpi-val { font-size: 20px; font-weight: 700; margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between; }
-    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85); }
     .card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .table-wrap { overflow-x: auto; width: 100%; }
-    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
-    thead th { padding: 11px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: rgba(6, 15, 30, 0.72); border-bottom: 1px solid var(--border); color: #7dd3fc; }
-    tbody td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid rgba(56, 189, 248, 0.11); }
-    tbody tr.row-long { background: rgba(16, 185, 129, 0.13); }
-    tbody tr.row-short { background: rgba(244, 63, 94, 0.13); }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
-    .badge-long { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
-    .badge-short { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
-    .badge-wait { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
-    .badge-cyan { background: var(--cyan-bg); color: var(--cyan-light); border-color: var(--cyan-border); }
-    .badge-neutral { background: rgba(30, 41, 59, 0.65); color: #cbd5e1; border-color: #334155; }
+    .table-wrap { overflow-x: auto; width: 100%; background: transparent; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; background: transparent; }
+    thead, thead tr, thead th {
+      background: transparent !important;
+      border-bottom: 1px solid rgba(103, 232, 249, 0.28);
+      color: #a5f3fc;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
+    }
+    thead th { padding: 11px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    tbody, tbody tr, tbody td {
+      background: transparent !important;
+    }
+    tbody tr { border-bottom: 1px solid rgba(103, 232, 249, 0.14); }
+    tbody td { padding: 10px 12px; vertical-align: middle; text-shadow: 0 1px 7px rgba(0, 0, 0, 0.9); }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid transparent; background: transparent; }
+    .badge-long { background: rgba(16, 185, 129, 0.14); color: #34d399; border-color: var(--green-border); }
+    .badge-short { background: rgba(244, 63, 94, 0.14); color: #fb7185; border-color: var(--red-border); }
+    .badge-wait { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: var(--amber-border); }
+    .badge-cyan { background: rgba(6, 182, 212, 0.14); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .badge-neutral { background: rgba(15, 23, 42, 0.2); color: #e2e8f0; border-color: rgba(148, 163, 184, 0.35); }
     .toast-wrap { position: fixed; bottom: 16px; right: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; }
-    .toast { padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(8, 18, 36, 0.92); border: 1px solid var(--border-light); color: var(--text-main); }
+    .toast { padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(6, 15, 30, 0.78); border: 1px solid var(--border-light); color: var(--text-main); }
   </style>
 </head>
 <body>
@@ -894,7 +903,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             <div class="brand-title">
               <span>Strict 15m VWAP + 9/21 EMA + 14-RSI Terminal</span>
               <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
-              <span class="pill pill-cloud mono">WAVE HUD + AI VOICE</span>
+              <span class="pill pill-cloud mono">CLEAR WAVE + TRANSPARENT GRID</span>
             </div>
             <div class="brand-sub">Session VWAP (UTC) + 9/21 EMA (±0.15%) + Closed Candle Wick/Close + Wilder's 14-RSI + AI Voice Alerts</div>
           </div>
@@ -1054,11 +1063,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
                 : (c.scalpCode === 'WATCH_LONG' || c.scalpCode === 'WATCH_SHORT') ? 'badge-wait'
                 : (c.scalpCode === 'BULL_TREND' || c.scalpCode === 'BEAR_TREND') ? 'badge-cyan'
                 : 'badge-neutral';
-              const rowCls = (c.signal === 'LONG' || c.scalpCode === 'SCALP_LONG') ? 'row-long'
-                : (c.signal === 'SHORT' || c.scalpCode === 'SCALP_SHORT') ? 'row-short'
-                : '';
               const emaBull = c.ema9 != null && c.ema21 != null && c.ema9 >= c.ema21;
-              return `<tr class="${rowCls}">
+              return `<tr>
                 <td class="mono text-dim">#${c.sr}</td>
                 <td><strong class="mono">${c.pair}</strong><div class="text-muted" style="font-size:11px;">${c.name}</div></td>
                 <td class="text-right mono" style="font-weight:700;">$${fmtP(c.price)}</td>
@@ -1124,7 +1130,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         }
       });
 
-      // Transformers-style live multi-layer energy wave background
+      // High-contrast Transformers-style live wave background
       (function initTransformersWaveBg() {
         const canvas = document.getElementById('waveBgCanvas');
         if (!canvas) return;
@@ -1143,15 +1149,15 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         function drawWaveRibbon(baseY, amp, freq, speed, phase, color, lineW, glowBlur) {
           ctx.save();
           ctx.beginPath();
-          const step = 6;
+          const step = 4;
           for (let x = 0; x <= w + step; x += step) {
             const normX = x / Math.max(1, w);
-            const envelope = Math.pow(Math.sin(normX * Math.PI), 0.72);
-            const surge = 1 + 0.35 * Math.sin(normX * 7 - t * speed * 1.6);
+            const envelope = Math.pow(Math.sin(normX * Math.PI), 0.52);
+            const surge = 1 + 0.42 * Math.sin(normX * 8 - t * speed * 1.7);
             const y =
               baseY +
               Math.sin(x * freq + t * speed + phase) * amp * envelope * surge +
-              Math.cos(x * freq * 2.15 - t * speed * 1.35 + phase) * (amp * 0.36) * envelope;
+              Math.cos(x * freq * 2.2 - t * speed * 1.4 + phase) * (amp * 0.42) * envelope;
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
@@ -1169,18 +1175,18 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         window.addEventListener('resize', resize);
 
         function frame() {
-          t += 0.024;
+          t += 0.028;
           ctx.clearRect(0, 0, w, h);
 
           const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
           bgGrad.addColorStop(0, '#020712');
-          bgGrad.addColorStop(0.5, '#041124');
+          bgGrad.addColorStop(0.5, '#04142b');
           bgGrad.addColorStop(1, '#020610');
           ctx.fillStyle = bgGrad;
           ctx.fillRect(0, 0, w, h);
 
-          // Subtle Cyber-Grid Lines
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.045)';
+          // Crisp Cyber-Grid
+          ctx.strokeStyle = 'rgba(103, 232, 249, 0.075)';
           ctx.lineWidth = 1;
           ctx.beginPath();
           for (let gx = 0; gx < w; gx += 64) {
@@ -1193,31 +1199,32 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           }
           ctx.stroke();
 
-          // Transformers-style layered plasma wave ribbons across the background
-          const midY = h * 0.52;
-          drawWaveRibbon(midY - 90, 48, 0.0065, 1.8, 0.0, 'rgba(6, 182, 212, 0.24)', 1.6, 10);
-          drawWaveRibbon(midY - 45, 72, 0.0085, 2.3, 1.1, 'rgba(103, 232, 249, 0.42)', 2.2, 16);
-          drawWaveRibbon(midY,      96, 0.0105, 2.8, 2.2, 'rgba(56, 189, 248, 0.58)', 2.8, 22);
-          drawWaveRibbon(midY + 45, 74, 0.0090, -2.1, 3.3, 'rgba(16, 185, 129, 0.44)', 2.2, 16);
-          drawWaveRibbon(midY + 90, 52, 0.0070, -1.6, 4.4, 'rgba(168, 85, 247, 0.26)', 1.6, 12);
+          // Clear, vivid layered energy waves
+          const midY = h * 0.54;
+          drawWaveRibbon(midY - 110, 62, 0.0070, 1.9, 0.0, 'rgba(34, 211, 238, 0.55)', 2.2, 14);
+          drawWaveRibbon(midY - 55,  88, 0.0090, 2.4, 1.1, 'rgba(103, 232, 249, 0.78)', 2.8, 20);
+          drawWaveRibbon(midY,      118, 0.0110, 3.0, 2.2, 'rgba(125, 211, 252, 0.95)', 3.4, 28);
+          drawWaveRibbon(midY + 55,  88, 0.0095, -2.2, 3.3, 'rgba(52, 211, 153, 0.78)', 2.8, 20);
+          drawWaveRibbon(midY + 110, 64, 0.0075, -1.7, 4.4, 'rgba(192, 132, 252, 0.58)', 2.2, 16);
 
-          // Traveling spark nodes along the primary energy wave
-          const sparkCount = 7;
+          // Bright traveling pulse sparks along the main wave
+          const sparkCount = 10;
           for (let s = 0; s < sparkCount; s++) {
-            const prog = ((t * 0.14 + s / sparkCount) % 1 + 1) % 1;
+            const prog = ((t * 0.16 + s / sparkCount) % 1 + 1) % 1;
             const sx = prog * w;
-            const env = Math.pow(Math.sin(prog * Math.PI), 0.72);
+            const env = Math.pow(Math.sin(prog * Math.PI), 0.52);
+            const surge = 1 + 0.42 * Math.sin(prog * 8 - t * 3.0 * 1.7);
             const sy =
               midY +
-              Math.sin(sx * 0.0105 + t * 2.8 + 2.2) * 96 * env +
-              Math.cos(sx * 0.0225 - t * 3.78 + 2.2) * 34 * env;
+              Math.sin(sx * 0.0110 + t * 3.0 + 2.2) * 118 * env * surge +
+              Math.cos(sx * 0.0242 - t * 4.2 + 2.2) * 49.5 * env;
 
             ctx.save();
-            ctx.fillStyle = s % 2 === 0 ? '#67e8f9' : '#34d399';
-            ctx.shadowColor = s % 2 === 0 ? '#06b6d4' : '#10b981';
-            ctx.shadowBlur = 14;
+            ctx.fillStyle = s % 2 === 0 ? '#a5f3fc' : '#6ee7b7';
+            ctx.shadowColor = s % 2 === 0 ? '#22d3ee' : '#10b981';
+            ctx.shadowBlur = 18;
             ctx.beginPath();
-            ctx.arc(sx, sy, 2.6, 0, Math.PI * 2);
+            ctx.arc(sx, sy, 3.4, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           }
@@ -1233,140 +1240,4 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     })();
   </script>
 </body>
-</html>"""
-
-
-# =============================================================================
-# 8. HTTP SERVER ROUTES
-# =============================================================================
-class WebTerminalHandler(BaseHTTPRequestHandler):
-    def _send_json(self, payload: dict, status: int = 200):
-        body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _send_html(self, html_str: str):
-        html_bytes = html_str.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(html_bytes)))
-        self.end_headers()
-        self.wfile.write(html_bytes)
-
-    def do_GET(self):
-        path = urlparse(self.path).path
-        if path == "/health":
-            with STATE_LOCK:
-                txt = f"OK | Scans: {SHARED_STATE['scans_completed']} | Alerts: {SHARED_STATE['alerts_sent']}\n".encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(txt)))
-            self.end_headers()
-            self.wfile.write(txt)
-            return
-        if path == "/api/state":
-            with STATE_LOCK:
-                snapshot = {
-                    "started_at": SHARED_STATE["started_at"],
-                    "last_scan": SHARED_STATE["last_scan"],
-                    "active_feed": SHARED_STATE["active_feed"],
-                    "poll_interval_sec": POLL_INTERVAL_SEC,
-                    "scans_completed": SHARED_STATE["scans_completed"],
-                    "alerts_sent": SHARED_STATE["alerts_sent"],
-                    "tg_configured": SHARED_STATE["tg_configured"],
-                    "config": dict(CONFIG),
-                    "coins": list(SHARED_STATE["coins"]),
-                    "alert_history": list(SHARED_STATE["alert_history"]),
-                }
-            self._send_json(snapshot)
-            return
-        self._send_html(DASHBOARD_HTML)
-
-    def do_HEAD(self):
-        self.send_response(200)
-        self.end_headers()
-
-    def do_POST(self):
-        path = urlparse(self.path).path
-        content_len = int(self.headers.get("Content-Length", "0"))
-        raw_body = self.rfile.read(content_len) if content_len > 0 else b"{}"
-        try:
-            body = json.loads(raw_body.decode("utf-8"))
-        except Exception:
-            body = {}
-
-        if path == "/api/config":
-            with STATE_LOCK:
-                if body.get("timeframe") in TF_MS:
-                    CONFIG["timeframe"] = body["timeframe"]
-                if "long_th" in body:
-                    v = float(body["long_th"])
-                    if 10 <= v <= 55:
-                        CONFIG["long_th"] = v
-                if "short_th" in body:
-                    v = float(body["short_th"])
-                    if 45 <= v <= 90:
-                        CONFIG["short_th"] = v
-                if "pullback_pct" in body:
-                    v = float(body["pullback_pct"])
-                    if 0.05 <= v <= 2.0:
-                        CONFIG["pullback_pct"] = round(v, 3)
-                if "vwap_filter" in body:
-                    CONFIG["vwap_filter"] = bool(body["vwap_filter"])
-                if "funding_filter" in body:
-                    CONFIG["funding_filter"] = bool(body["funding_filter"])
-                if "scalp_alerts" in body:
-                    CONFIG["scalp_alerts"] = bool(body["scalp_alerts"])
-                cfg_copy = dict(CONFIG)
-
-            if body.get("force_history"):
-                FORCE_HISTORY_SYNC.set()
-            if body.get("rescan"):
-                RESCAN_EVENT.set()
-            self._send_json({"ok": True, "config": cfg_copy})
-            return
-
-        if path == "/api/test-tg":
-            with STATE_LOCK:
-                cfg = dict(CONFIG)
-            ok, err = send_telegram(
-                f"✅ <b>Strict 15m VWAP + 9/21 EMA + 14-RSI Bot Test OK!</b>\n"
-                f"TF: <b>{cfg['timeframe'].upper()}</b> | Pullback: <b>±{cfg['pullback_pct']:.2f}%</b>\n"
-                f"⏰ {now_ist_str()}"
-            )
-            self._send_json({"ok": ok, "error": None if ok else err})
-            return
-
-        self._send_json({"ok": False, "error": "Not found"}, status=404)
-
-    def log_message(self, format, *args):
-        return
-
-
-def main():
-    if CONFIG["timeframe"] not in TF_MS:
-        print(f"[ERROR] Unsupported TIMEFRAME: {CONFIG['timeframe']}")
-        sys.exit(1)
-
-    t = threading.Thread(target=scanner_worker, daemon=True)
-    t.start()
-
-    if SEND_STARTUP_MSG:
-        send_telegram(
-            f"✅ <b>Strict 15m Scalping Terminal Started!</b>\n"
-            f"TF: <b>{CONFIG['timeframe'].upper()}</b> | Pullback: <b>±{CONFIG['pullback_pct']:.2f}%</b>\n"
-            f"⏰ {now_ist_str()}"
-        )
-
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), WebTerminalHandler)
-    print(f"[{now_ist_str()}] Strict 15m bot.py listening on port {PORT}")
-    server.serve_forever()
-
-
-if __name__ == "__main__":
-    main()
+</html>
