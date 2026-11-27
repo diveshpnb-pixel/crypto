@@ -4,7 +4,7 @@ J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`render_bot.py
 ------------------------------------------------------------------------------------
 - Strict 15m Pullback + Closed-Candle Momentum / Rejection Confirmation
 - High-Contrast Transformers-Style Live Wave Background + Transparent Rows/Columns
-- AI Voice Notification Alert + 24/7 Telegram Alerts
+- Interactive Wave Density & Ribbon Light Toggles + AI Voice Alert + 24/7 TG Alerts
 """
 
 import os
@@ -68,7 +68,7 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.2"})
+SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.3"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
@@ -787,7 +787,7 @@ def scanner_worker():
 
 
 # =============================================================================
-# 7. EMBEDDED HTML DASHBOARD (CLEAR WAVE BACKGROUND + TRANSPARENT ROWS/COLS)
+# 7. EMBEDDED HTML DASHBOARD (DENSITY + RIBBON LIGHT CONTROLS)
 # =============================================================================
 DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
@@ -856,6 +856,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .btn-funding.active { background: rgba(168, 85, 247, 0.16); color: var(--purple-light); border-color: var(--purple-border); }
     .btn-scalp.active { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border-color: var(--green-border); }
     .btn-voice.active { background: rgba(6, 182, 212, 0.16); color: var(--cyan-light); border-color: var(--cyan-border); }
+    .btn-wave { background: rgba(56, 189, 248, 0.14); color: #bae6fd; border-color: rgba(125, 211, 252, 0.45); }
+    .btn-light { background: rgba(250, 204, 21, 0.14); color: #fef08a; border-color: rgba(253, 224, 71, 0.45); }
     .btn-tg.active { background: rgba(6, 182, 212, 0.16); color: var(--cyan-light); border-color: var(--cyan-border); }
     .btn-long { padding: 4px 8px; font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: var(--green-border); border-radius: 6px; }
     .btn-short { padding: 4px 8px; font-size: 11px; background: rgba(244, 63, 94, 0.15); color: #fb7185; border-color: var(--red-border); border-radius: 6px; }
@@ -929,6 +931,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
         <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
         <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 Strict TG: ON</span></button>
+        <button id="waveDensityBtn" type="button" class="btn btn-wave"><span id="waveDensityLabel">🌊 Density: HIGH</span></button>
+        <button id="ribbonLightBtn" type="button" class="btn btn-light"><span id="ribbonLightLabel">💡 Ribbon Light: HIGH</span></button>
         <button id="voiceToggleBtn" type="button" class="btn btn-voice active"><span id="voiceLabel">🔊 AI Voice: ON</span></button>
         <button id="tgTestBtn" type="button" class="btn btn-tg active"><span>✈️ Test TG</span></button>
       </div>
@@ -950,10 +954,14 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     (() => {
       'use strict';
       const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
+      const WAVE_MODES = ['HIGH', 'MED', 'LOW'];
+      const LIGHT_MODES = ['HIGH', 'MED', 'LOW'];
       let cfg = { timeframe: '15m', long_th: 35, short_th: 70, pullback_pct: 0.15, vwap_filter: true, funding_filter: true, scalp_alerts: true };
       let coins = [];
       let voiceEnabled = true;
       let userUnlockedAudio = false;
+      let waveDensityIdx = 0; // 0: HIGH, 1: MED, 2: LOW
+      let ribbonLightIdx = 0; // 0: HIGH, 1: MED, 2: LOW
       const announcedAlertKeys = new Set();
 
       const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
@@ -1102,6 +1110,22 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       document.getElementById('fundingFilterToggleBtn').addEventListener('click', () => pushCfg({ funding_filter: !cfg.funding_filter }));
       document.getElementById('scalpAlertToggleBtn').addEventListener('click', () => pushCfg({ scalp_alerts: !cfg.scalp_alerts }));
 
+      document.getElementById('waveDensityBtn').addEventListener('click', () => {
+        userUnlockedAudio = true;
+        waveDensityIdx = (waveDensityIdx + 1) % WAVE_MODES.length;
+        const mode = WAVE_MODES[waveDensityIdx];
+        document.getElementById('waveDensityLabel').textContent = `🌊 Density: ${mode}`;
+        toast(`Wave Density: ${mode}`);
+      });
+
+      document.getElementById('ribbonLightBtn').addEventListener('click', () => {
+        userUnlockedAudio = true;
+        ribbonLightIdx = (ribbonLightIdx + 1) % LIGHT_MODES.length;
+        const mode = LIGHT_MODES[ribbonLightIdx];
+        document.getElementById('ribbonLightLabel').textContent = `💡 Ribbon Light: ${mode}`;
+        toast(`Ribbon Light: ${mode}`);
+      });
+
       const voiceBtn = document.getElementById('voiceToggleBtn');
       voiceBtn.addEventListener('click', () => {
         userUnlockedAudio = true;
@@ -1130,7 +1154,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         }
       });
 
-      // High-contrast Transformers-style live wave background
+      // High-contrast Transformers-style live wave background with Density & Ribbon Light controls
       (function initTransformersWaveBg() {
         const canvas = document.getElementById('waveBgCanvas');
         if (!canvas) return;
@@ -1146,7 +1170,26 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        function drawWaveRibbon(baseY, amp, freq, speed, phase, color, lineW, glowBlur) {
+        function getDensitySettings() {
+          const mode = WAVE_MODES[waveDensityIdx] || 'HIGH';
+          if (mode === 'LOW') return { ribbonCount: 2, gridStep: 112, sparkCount: 4, ampScale: 0.72 };
+          if (mode === 'MED') return { ribbonCount: 4, gridStep: 84, sparkCount: 7, ampScale: 0.90 };
+          return { ribbonCount: 6, gridStep: 60, sparkCount: 12, ampScale: 1.12 };
+        }
+
+        function getLightSettings() {
+          const mode = LIGHT_MODES[ribbonLightIdx] || 'HIGH';
+          if (mode === 'LOW') return { alphaScale: 0.35, widthScale: 0.75, glowScale: 0.35 };
+          if (mode === 'MED') return { alphaScale: 0.68, widthScale: 0.92, glowScale: 0.70 };
+          return { alphaScale: 1.0, widthScale: 1.15, glowScale: 1.25 };
+        }
+
+        function rgbaWithScale(rgb, baseAlpha, scale) {
+          const a = Math.max(0.03, Math.min(1, baseAlpha * scale));
+          return `rgba(${rgb}, ${a.toFixed(3)})`;
+        }
+
+        function drawWaveRibbon(baseY, amp, freq, speed, phase, rgb, baseAlpha, lineW, glowBlur, light) {
           ctx.save();
           ctx.beginPath();
           const step = 4;
@@ -1161,11 +1204,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
-          ctx.strokeStyle = color;
-          ctx.lineWidth = lineW;
-          if (glowBlur > 0) {
-            ctx.shadowColor = color;
-            ctx.shadowBlur = glowBlur;
+          const strokeCol = rgbaWithScale(rgb, baseAlpha, light.alphaScale);
+          ctx.strokeStyle = strokeCol;
+          ctx.lineWidth = Math.max(1, lineW * light.widthScale);
+          if (glowBlur > 0 && light.glowScale > 0.05) {
+            ctx.shadowColor = strokeCol;
+            ctx.shadowBlur = glowBlur * light.glowScale;
           }
           ctx.stroke();
           ctx.restore();
@@ -1178,6 +1222,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           t += 0.028;
           ctx.clearRect(0, 0, w, h);
 
+          const density = getDensitySettings();
+          const light = getLightSettings();
+
           const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
           bgGrad.addColorStop(0, '#020712');
           bgGrad.addColorStop(0.5, '#04142b');
@@ -1185,46 +1232,56 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           ctx.fillStyle = bgGrad;
           ctx.fillRect(0, 0, w, h);
 
-          // Crisp Cyber-Grid
-          ctx.strokeStyle = 'rgba(103, 232, 249, 0.075)';
+          // Cyber-Grid scaled by Wave Density & Ribbon Light
+          ctx.strokeStyle = rgbaWithScale('103, 232, 249', 0.08, light.alphaScale);
           ctx.lineWidth = 1;
           ctx.beginPath();
-          for (let gx = 0; gx < w; gx += 64) {
+          for (let gx = 0; gx < w; gx += density.gridStep) {
             ctx.moveTo(gx, 0);
             ctx.lineTo(gx, h);
           }
-          for (let gy = 0; gy < h; gy += 64) {
+          for (let gy = 0; gy < h; gy += density.gridStep) {
             ctx.moveTo(0, gy);
             ctx.lineTo(w, gy);
           }
           ctx.stroke();
 
-          // Clear, vivid layered energy waves
+          // Layered energy ribbons
           const midY = h * 0.54;
-          drawWaveRibbon(midY - 110, 62, 0.0070, 1.9, 0.0, 'rgba(34, 211, 238, 0.55)', 2.2, 14);
-          drawWaveRibbon(midY - 55,  88, 0.0090, 2.4, 1.1, 'rgba(103, 232, 249, 0.78)', 2.8, 20);
-          drawWaveRibbon(midY,      118, 0.0110, 3.0, 2.2, 'rgba(125, 211, 252, 0.95)', 3.4, 28);
-          drawWaveRibbon(midY + 55,  88, 0.0095, -2.2, 3.3, 'rgba(52, 211, 153, 0.78)', 2.8, 20);
-          drawWaveRibbon(midY + 110, 64, 0.0075, -1.7, 4.4, 'rgba(192, 132, 252, 0.58)', 2.2, 16);
+          const ribbons = [
+            { y: midY,       amp: 118 * density.ampScale, freq: 0.0110, spd:  3.0, ph: 2.2, rgb: '125, 211, 252', a: 0.96, lw: 3.4, gl: 28 },
+            { y: midY + 55,  amp:  88 * density.ampScale, freq: 0.0095, spd: -2.2, ph: 3.3, rgb: '52, 211, 153',  a: 0.80, lw: 2.8, gl: 22 },
+            { y: midY - 55,  amp:  88 * density.ampScale, freq: 0.0090, spd:  2.4, ph: 1.1, rgb: '103, 232, 249', a: 0.80, lw: 2.8, gl: 22 },
+            { y: midY + 110, amp:  64 * density.ampScale, freq: 0.0075, spd: -1.7, ph: 4.4, rgb: '192, 132, 252', a: 0.62, lw: 2.2, gl: 16 },
+            { y: midY - 110, amp:  62 * density.ampScale, freq: 0.0070, spd:  1.9, ph: 0.0, rgb: '34, 211, 238',  a: 0.60, lw: 2.2, gl: 16 },
+            { y: midY + 155, amp:  46 * density.ampScale, freq: 0.0062, spd:  1.4, ph: 5.1, rgb: '56, 189, 248',  a: 0.48, lw: 1.8, gl: 12 },
+          ];
 
-          // Bright traveling pulse sparks along the main wave
-          const sparkCount = 10;
-          for (let s = 0; s < sparkCount; s++) {
-            const prog = ((t * 0.16 + s / sparkCount) % 1 + 1) % 1;
+          for (let i = 0; i < Math.min(density.ribbonCount, ribbons.length); i++) {
+            const rb = ribbons[i];
+            drawWaveRibbon(rb.y, rb.amp, rb.freq, rb.spd, rb.ph, rb.rgb, rb.a, rb.lw, rb.gl, light);
+          }
+
+          // Traveling pulse sparks along the main wave
+          const mainAmp = ribbons[0].amp;
+          for (let s = 0; s < density.sparkCount; s++) {
+            const prog = ((t * 0.16 + s / Math.max(1, density.sparkCount)) % 1 + 1) % 1;
             const sx = prog * w;
             const env = Math.pow(Math.sin(prog * Math.PI), 0.52);
             const surge = 1 + 0.42 * Math.sin(prog * 8 - t * 3.0 * 1.7);
             const sy =
               midY +
-              Math.sin(sx * 0.0110 + t * 3.0 + 2.2) * 118 * env * surge +
-              Math.cos(sx * 0.0242 - t * 4.2 + 2.2) * 49.5 * env;
+              Math.sin(sx * 0.0110 + t * 3.0 + 2.2) * mainAmp * env * surge +
+              Math.cos(sx * 0.0242 - t * 4.2 + 2.2) * (mainAmp * 0.42) * env;
 
             ctx.save();
-            ctx.fillStyle = s % 2 === 0 ? '#a5f3fc' : '#6ee7b7';
-            ctx.shadowColor = s % 2 === 0 ? '#22d3ee' : '#10b981';
-            ctx.shadowBlur = 18;
+            const isCyan = s % 2 === 0;
+            const sparkCol = rgbaWithScale(isCyan ? '165, 243, 252' : '110, 231, 183', 0.95, Math.max(0.45, light.alphaScale));
+            ctx.fillStyle = sparkCol;
+            ctx.shadowColor = sparkCol;
+            ctx.shadowBlur = 18 * light.glowScale;
             ctx.beginPath();
-            ctx.arc(sx, sy, 3.4, 0, Math.PI * 2);
+            ctx.arc(sx, sy, Math.max(2.2, 3.4 * light.widthScale), 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           }
@@ -1241,140 +1298,3 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </script>
 </body>
 </html>
-"""
-
-
-# =============================================================================
-# 8. HTTP SERVER ROUTES
-# =============================================================================
-class WebTerminalHandler(BaseHTTPRequestHandler):
-    def _send_json(self, payload: dict, status: int = 200):
-        body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _send_html(self, html_str: str):
-        html_bytes = html_str.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(html_bytes)))
-        self.end_headers()
-        self.wfile.write(html_bytes)
-
-    def do_GET(self):
-        path = urlparse(self.path).path
-        if path == "/health":
-            with STATE_LOCK:
-                txt = f"OK | Scans: {SHARED_STATE['scans_completed']} | Alerts: {SHARED_STATE['alerts_sent']}\n".encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(txt)))
-            self.end_headers()
-            self.wfile.write(txt)
-            return
-        if path == "/api/state":
-            with STATE_LOCK:
-                snapshot = {
-                    "started_at": SHARED_STATE["started_at"],
-                    "last_scan": SHARED_STATE["last_scan"],
-                    "active_feed": SHARED_STATE["active_feed"],
-                    "poll_interval_sec": POLL_INTERVAL_SEC,
-                    "scans_completed": SHARED_STATE["scans_completed"],
-                    "alerts_sent": SHARED_STATE["alerts_sent"],
-                    "tg_configured": SHARED_STATE["tg_configured"],
-                    "config": dict(CONFIG),
-                    "coins": list(SHARED_STATE["coins"]),
-                    "alert_history": list(SHARED_STATE["alert_history"]),
-                }
-            self._send_json(snapshot)
-            return
-        self._send_html(DASHBOARD_HTML)
-
-    def do_HEAD(self):
-        self.send_response(200)
-        self.end_headers()
-
-    def do_POST(self):
-        path = urlparse(self.path).path
-        content_len = int(self.headers.get("Content-Length", "0"))
-        raw_body = self.rfile.read(content_len) if content_len > 0 else b"{}"
-        try:
-            body = json.loads(raw_body.decode("utf-8"))
-        except Exception:
-            body = {}
-
-        if path == "/api/config":
-            with STATE_LOCK:
-                if body.get("timeframe") in TF_MS:
-                    CONFIG["timeframe"] = body["timeframe"]
-                if "long_th" in body:
-                    v = float(body["long_th"])
-                    if 10 <= v <= 55:
-                        CONFIG["long_th"] = v
-                if "short_th" in body:
-                    v = float(body["short_th"])
-                    if 45 <= v <= 90:
-                        CONFIG["short_th"] = v
-                if "pullback_pct" in body:
-                    v = float(body["pullback_pct"])
-                    if 0.05 <= v <= 2.0:
-                        CONFIG["pullback_pct"] = round(v, 3)
-                if "vwap_filter" in body:
-                    CONFIG["vwap_filter"] = bool(body["vwap_filter"])
-                if "funding_filter" in body:
-                    CONFIG["funding_filter"] = bool(body["funding_filter"])
-                if "scalp_alerts" in body:
-                    CONFIG["scalp_alerts"] = bool(body["scalp_alerts"])
-                cfg_copy = dict(CONFIG)
-
-            if body.get("force_history"):
-                FORCE_HISTORY_SYNC.set()
-            if body.get("rescan"):
-                RESCAN_EVENT.set()
-            self._send_json({"ok": True, "config": cfg_copy})
-            return
-
-        if path == "/api/test-tg":
-            with STATE_LOCK:
-                cfg = dict(CONFIG)
-            ok, err = send_telegram(
-                f"✅ <b>Strict 15m VWAP + 9/21 EMA + 14-RSI Bot Test OK!</b>\n"
-                f"TF: <b>{cfg['timeframe'].upper()}</b> | Pullback: <b>±{cfg['pullback_pct']:.2f}%</b>\n"
-                f"⏰ {now_ist_str()}"
-            )
-            self._send_json({"ok": ok, "error": None if ok else err})
-            return
-
-        self._send_json({"ok": False, "error": "Not found"}, status=404)
-
-    def log_message(self, format, *args):
-        return
-
-
-def main():
-    if CONFIG["timeframe"] not in TF_MS:
-        print(f"[ERROR] Unsupported TIMEFRAME: {CONFIG['timeframe']}")
-        sys.exit(1)
-
-    t = threading.Thread(target=scanner_worker, daemon=True)
-    t.start()
-
-    if SEND_STARTUP_MSG:
-        send_telegram(
-            f"✅ <b>Strict 15m Scalping Terminal Started!</b>\n"
-            f"TF: <b>{CONFIG['timeframe'].upper()}</b> | Pullback: <b>±{CONFIG['pullback_pct']:.2f}%</b>\n"
-            f"⏰ {now_ist_str()}"
-        )
-
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), WebTerminalHandler)
-    print(f"[{now_ist_str()}] Strict 15m render_bot.py listening on port {PORT}")
-    server.serve_forever()
-
-
-if __name__ == "__main__":
-    main()
