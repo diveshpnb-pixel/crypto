@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`bot.py`)
-------------------------------------------------------------------------------
+J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`render_bot.py`)
+------------------------------------------------------------------------------------
 - Strict 15m Pullback + Closed-Candle Momentum / Rejection Confirmation
 - High-Contrast Transformers-Style Live Wave Background + Transparent Rows/Columns
 - AI Voice Notification Alert + 24/7 Telegram Alerts
@@ -1241,3 +1241,140 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </script>
 </body>
 </html>
+"""
+
+
+# =============================================================================
+# 8. HTTP SERVER ROUTES
+# =============================================================================
+class WebTerminalHandler(BaseHTTPRequestHandler):
+    def _send_json(self, payload: dict, status: int = 200):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_html(self, html_str: str):
+        html_bytes = html_str.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(html_bytes)))
+        self.end_headers()
+        self.wfile.write(html_bytes)
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/health":
+            with STATE_LOCK:
+                txt = f"OK | Scans: {SHARED_STATE['scans_completed']} | Alerts: {SHARED_STATE['alerts_sent']}\n".encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(txt)))
+            self.end_headers()
+            self.wfile.write(txt)
+            return
+        if path == "/api/state":
+            with STATE_LOCK:
+                snapshot = {
+                    "started_at": SHARED_STATE["started_at"],
+                    "last_scan": SHARED_STATE["last_scan"],
+                    "active_feed": SHARED_STATE["active_feed"],
+                    "poll_interval_sec": POLL_INTERVAL_SEC,
+                    "scans_completed": SHARED_STATE["scans_completed"],
+                    "alerts_sent": SHARED_STATE["alerts_sent"],
+                    "tg_configured": SHARED_STATE["tg_configured"],
+                    "config": dict(CONFIG),
+                    "coins": list(SHARED_STATE["coins"]),
+                    "alert_history": list(SHARED_STATE["alert_history"]),
+                }
+            self._send_json(snapshot)
+            return
+        self._send_html(DASHBOARD_HTML)
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        content_len = int(self.headers.get("Content-Length", "0"))
+        raw_body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            body = json.loads(raw_body.decode("utf-8"))
+        except Exception:
+            body = {}
+
+        if path == "/api/config":
+            with STATE_LOCK:
+                if body.get("timeframe") in TF_MS:
+                    CONFIG["timeframe"] = body["timeframe"]
+                if "long_th" in body:
+                    v = float(body["long_th"])
+                    if 10 <= v <= 55:
+                        CONFIG["long_th"] = v
+                if "short_th" in body:
+                    v = float(body["short_th"])
+                    if 45 <= v <= 90:
+                        CONFIG["short_th"] = v
+                if "pullback_pct" in body:
+                    v = float(body["pullback_pct"])
+                    if 0.05 <= v <= 2.0:
+                        CONFIG["pullback_pct"] = round(v, 3)
+                if "vwap_filter" in body:
+                    CONFIG["vwap_filter"] = bool(body["vwap_filter"])
+                if "funding_filter" in body:
+                    CONFIG["funding_filter"] = bool(body["funding_filter"])
+                if "scalp_alerts" in body:
+                    CONFIG["scalp_alerts"] = bool(body["scalp_alerts"])
+                cfg_copy = dict(CONFIG)
+
+            if body.get("force_history"):
+                FORCE_HISTORY_SYNC.set()
+            if body.get("rescan"):
+                RESCAN_EVENT.set()
+            self._send_json({"ok": True, "config": cfg_copy})
+            return
+
+        if path == "/api/test-tg":
+            with STATE_LOCK:
+                cfg = dict(CONFIG)
+            ok, err = send_telegram(
+                f"✅ <b>Strict 15m VWAP + 9/21 EMA + 14-RSI Bot Test OK!</b>\n"
+                f"TF: <b>{cfg['timeframe'].upper()}</b> | Pullback: <b>±{cfg['pullback_pct']:.2f}%</b>\n"
+                f"⏰ {now_ist_str()}"
+            )
+            self._send_json({"ok": ok, "error": None if ok else err})
+            return
+
+        self._send_json({"ok": False, "error": "Not found"}, status=404)
+
+    def log_message(self, format, *args):
+        return
+
+
+def main():
+    if CONFIG["timeframe"] not in TF_MS:
+        print(f"[ERROR] Unsupported TIMEFRAME: {CONFIG['timeframe']}")
+        sys.exit(1)
+
+    t = threading.Thread(target=scanner_worker, daemon=True)
+    t.start()
+
+    if SEND_STARTUP_MSG:
+        send_telegram(
+            f"✅ <b>Strict 15m Scalping Terminal Started!</b>\n"
+            f"TF: <b>{CONFIG['timeframe'].upper()}</b> | Pullback: <b>±{CONFIG['pullback_pct']:.2f}%</b>\n"
+            f"⏰ {now_ist_str()}"
+        )
+
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), WebTerminalHandler)
+    print(f"[{now_ist_str()}] Strict 15m render_bot.py listening on port {PORT}")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
