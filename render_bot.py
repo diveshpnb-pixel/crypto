@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Live Trading Terminal (`bot.py`)
---------------------------------------------------------------------------------
+J.A.R.V.I.S. Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal (`bot.py`)
+------------------------------------------------------------------------------
+- Strict 15m Pullback + Closed-Candle Momentum / Rejection Confirmation
 - "/"          : Top 10 Crypto Futures 2-Second Live Scalping Terminal + 24/7 TG Alerts
-- "/nifty"     : Dedicated Nifty 50 Live RSI Screener (5m to 1Y) + Dual Render TG Alerts
-- "/portfolio" : Unified Live Portfolio, Capital Allocation, Realized P&L & Win Rate Tracker
+- "/nifty"     : Nifty 50 Route
+- "/portfolio" : Portfolio Route
 """
 
 import os
@@ -31,7 +32,7 @@ CONFIG = {
     "timeframe": os.getenv("TIMEFRAME", "15m").strip() or "15m",
     "long_th": float(os.getenv("LONG_RSI_TH", "35")),
     "short_th": float(os.getenv("SHORT_RSI_TH", "70")),
-    "pullback_pct": float(os.getenv("PULLBACK_PCT", "0.20")),
+    "pullback_pct": float(os.getenv("PULLBACK_PCT", "0.15")),
     "vwap_filter": os.getenv("VWAP_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "funding_filter": os.getenv("FUNDING_FILTER_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
     "scalp_alerts": os.getenv("SCALP_ALERTS_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on"),
@@ -68,12 +69,11 @@ RSI_PERIOD = 14
 IST = timezone(timedelta(hours=5, minutes=30))
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "JARVIS-Combined-VWAP-EMA-RSI-Bot/1.0"})
+SESSION.headers.update({"User-Agent": "JARVIS-Strict-15m-Bot/2.0"})
 
 STATE_LOCK = threading.Lock()
 RESCAN_EVENT = threading.Event()
 FORCE_HISTORY_SYNC = threading.Event()
-NIFTY_COOLDOWNS = {}
 
 SHARED_STATE = {
     "started_at": datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
@@ -89,7 +89,7 @@ SHARED_STATE = {
 
 
 # =============================================================================
-# 3. FORMATTING & TECHNICAL MATH (VWAP + 9/21 EMA + 14-RSI)
+# 3. FORMATTING & TECHNICAL MATH
 # =============================================================================
 def fmt_price(v) -> str:
     if v is None or math.isnan(v):
@@ -131,16 +131,17 @@ def get_utc_day_start_ms(ts_ms: int) -> int:
     return int(day_start.timestamp() * 1000)
 
 
-def compute_ema_base(closes: list[float], period: int):
+def compute_ema_series(closes: list[float], period: int) -> list[float]:
     if not closes:
-        return None
+        return []
     if len(closes) < period:
-        return sum(closes) / len(closes)
+        avg = sum(closes) / len(closes)
+        return [avg] * len(closes)
     k = 2.0 / (period + 1)
-    ema = sum(closes[:period]) / period
+    out = [sum(closes[:period]) / period]
     for px in closes[period:]:
-        ema = px * k + ema * (1.0 - k)
-    return ema
+        out.append(px * k + out[-1] * (1.0 - k))
+    return out
 
 
 def compute_live_ema(base_ema: float, live_price: float, period: int):
@@ -218,8 +219,36 @@ def compute_live_vwap(cache_entry: dict, live_price: float):
     return live_price, 0.0
 
 
+def evaluate_closed_candle_confirmation(last_closed: dict, prev_closed: dict, last_ema21: float) -> dict:
+    """
+    Closed-candle confirmation for stricter 15m setups:
+    - Bullish bounce: last closed candle touches/dips near 21 EMA and closes green (c > o) with lower rejection wick
+    - Bearish rejection: last closed candle touches/rallies near 21 EMA and closes red (c < o) with upper rejection wick
+    """
+    if not last_closed or not last_ema21 or last_ema21 <= 0:
+        return {"bull_confirmed": False, "bear_confirmed": False, "note": "No candle"}
+
+    o = last_closed["c"] if "o" not in last_closed else last_closed["o"]
+    h, l, c = last_closed["h"], last_closed["l"], last_closed["c"]
+    rng = max(h - l, 1e-9)
+    lower_wick_ratio = (min(o, c) - l) / rng
+    upper_wick_ratio = (h - max(o, c)) / rng
+
+    touched_ema21_low = (abs(l - last_ema21) / last_ema21 <= 0.0025) or (l <= last_ema21)
+    touched_ema21_high = (abs(h - last_ema21) / last_ema21 <= 0.0025) or (h >= last_ema21)
+
+    bull_ok = touched_ema21_low and (c >= o) and (lower_wick_ratio >= 0.25)
+    bear_ok = touched_ema21_high and (c <= o) and (upper_wick_ratio >= 0.25)
+
+    return {
+        "bull_confirmed": bull_ok,
+        "bear_confirmed": bear_ok,
+        "note": "Wick+Close OK" if (bull_ok or bear_ok) else "Awaiting Wick/Close",
+    }
+
+
 # =============================================================================
-# 4. MULTI-SOURCE CRYPTO CANDLE & 2-SECOND BATCH TICKER FETCHERS
+# 4. MULTI-SOURCE CANDLE & 2-SECOND BATCH TICKER FETCHERS
 # =============================================================================
 def candle_limit(tf: str) -> int:
     return 300 if tf == "5m" else 120
@@ -272,7 +301,7 @@ def fetch_binance(item: dict, tf: str, is_futures: bool = False):
     if not isinstance(raw, list) or len(raw) <= RSI_PERIOD + 1:
         raise ValueError("Insufficient Binance candles")
     return [
-        {"t": int(k[0]), "h": float(k[2]), "l": float(k[3]), "c": float(k[4]), "v": float(k[5])}
+        {"t": int(k[0]), "o": float(k[1]), "h": float(k[2]), "l": float(k[3]), "c": float(k[4]), "v": float(k[5])}
         for k in raw
     ]
 
@@ -293,7 +322,7 @@ def fetch_hyperliquid(item: dict, tf: str):
     if not isinstance(raw, list) or len(raw) <= RSI_PERIOD + 1:
         raise ValueError("Insufficient Hyperliquid candles")
     return [
-        {"t": int(k["t"]), "h": float(k["h"]), "l": float(k["l"]), "c": float(k["c"]), "v": float(k["v"])}
+        {"t": int(k["t"]), "o": float(k["o"]), "h": float(k["h"]), "l": float(k["l"]), "c": float(k["c"]), "v": float(k["v"])}
         for k in raw
     ]
 
@@ -310,7 +339,7 @@ def fetch_okx(item: dict, tf: str):
         raise ValueError("Insufficient OKX candles")
     data.reverse()
     return [
-        {"t": int(k[0]), "h": float(k[2]), "l": float(k[3]), "c": float(k[4]), "v": float(k[5])}
+        {"t": int(k[0]), "o": float(k[1]), "h": float(k[2]), "l": float(k[3]), "c": float(k[4]), "v": float(k[5])}
         for k in data
     ]
 
@@ -403,7 +432,7 @@ def fetch_live_prices_batch() -> tuple[str, dict[str, float]]:
 
 
 # =============================================================================
-# 5. COMBINED VWAP + 9/21 EMA + 14-RSI SIGNAL ENGINE & DUAL TELEGRAM SENDER
+# 5. STRICT SIGNAL ENGINE & DUAL TELEGRAM SENDER
 # =============================================================================
 def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -> str:
     if rsi is None or price is None:
@@ -421,18 +450,20 @@ def evaluate_signal(price: float, rsi: float, vwap: float, funding, cfg: dict) -
     return "WAIT"
 
 
-def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float, cfg: dict) -> dict:
+def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema21: float, candle_conf: dict, cfg: dict) -> dict:
     """
-    Combined VWAP + 9/21 EMA + 14-RSI Setup:
-    - Long: Price > VWAP, 9 EMA > 21 EMA (spread >= 0.02%), Price within +-pullback_pct of 21 EMA or VWAP, RSI 48..65
-    - Short: Price < VWAP, 9 EMA < 21 EMA (spread >= 0.02%), Price within +-pullback_pct of 21 EMA or VWAP, RSI 35..52
+    Strict 15m Scalping Setup:
+    1) Trend: Price vs VWAP, 9 vs 21 EMA, and EMA spread >= 0.03%
+    2) Tight Pullback: Price within +-pullback_pct (default 0.15%) of 21 EMA or VWAP
+    3) Closed-Candle Confirmation: Lower/upper wick + candle close confirmation
+    4) Tight RSI Zone: 48..62 for Long Pullback; 38..52 for Short Pullback
     """
     if None in (price, rsi, vwap, ema9, ema21) or price <= 0 or ema21 <= 0:
         return {"code": "WAIT", "label": "SYNCING...", "trend": "NEUTRAL"}
 
-    pb_zone = float(cfg.get("pullback_pct", 0.20))
+    pb_zone = float(cfg.get("pullback_pct", 0.15))
     ema_spread_pct = abs(ema9 - ema21) / ema21 * 100.0
-    not_flat = ema_spread_pct >= 0.02
+    not_flat = ema_spread_pct >= 0.03
 
     bull_trend = (price > vwap) and (ema9 > ema21) and not_flat
     bear_trend = (price < vwap) and (ema9 < ema21) and not_flat
@@ -441,10 +472,17 @@ def evaluate_scalp_setup(price: float, rsi: float, vwap: float, ema9: float, ema
     dist_vwap_pct = abs(price - vwap) / price * 100.0
     near_zone = (dist_ema21_pct <= pb_zone) or (dist_vwap_pct <= pb_zone)
 
-    if bull_trend and near_zone and (48.0 <= rsi <= 65.0):
-        return {"code": "SCALP_LONG", "label": "LONG • PULLBACK", "trend": "BULL"}
-    if bear_trend and near_zone and (35.0 <= rsi <= 52.0):
-        return {"code": "SCALP_SHORT", "label": "SHORT • PULLBACK", "trend": "BEAR"}
+    bull_ok = bull_trend and near_zone and (48.0 <= rsi <= 62.0) and bool(candle_conf.get("bull_confirmed"))
+    bear_ok = bear_trend and near_zone and (38.0 <= rsi <= 52.0) and bool(candle_conf.get("bear_confirmed"))
+
+    if bull_ok:
+        return {"code": "SCALP_LONG", "label": "LONG • STRICT PULLBACK", "trend": "BULL"}
+    if bear_ok:
+        return {"code": "SCALP_SHORT", "label": "SHORT • STRICT PULLBACK", "trend": "BEAR"}
+    if bull_trend and near_zone:
+        return {"code": "WATCH_LONG", "label": "WATCH LONG (WICK/RSI)", "trend": "BULL"}
+    if bear_trend and near_zone:
+        return {"code": "WATCH_SHORT", "label": "WATCH SHORT (WICK/RSI)", "trend": "BEAR"}
     if bull_trend:
         return {"code": "BULL_TREND", "label": "BULL TREND", "trend": "BULL"}
     if bear_trend:
@@ -561,6 +599,7 @@ def seed_initial_snapshot():
             "emaTrend": "NEUTRAL",
             "scalpCode": "WAIT",
             "scalpLabel": "SYNCING...",
+            "candleNote": "Syncing...",
             "funding": None,
             "rsi": None,
             "rsiRank": None,
@@ -585,8 +624,14 @@ def sync_all_candle_histories(tf: str, coin_cache: dict):
         closed_closes = [k["c"] for k in closed]
         prev_close = closed_closes[-1]
         base_gain, base_loss = compute_wilder_base(closed_closes, RSI_PERIOD)
-        base_ema9 = compute_ema_base(closed_closes, 9)
-        base_ema21 = compute_ema_base(closed_closes, 21)
+        ema9_series = compute_ema_series(closed_closes, 9)
+        ema21_series = compute_ema_series(closed_closes, 21)
+        last_ema9 = ema9_series[-1] if ema9_series else prev_close
+        last_ema21 = ema21_series[-1] if ema21_series else prev_close
+        last_closed_candle = closed[-1] if closed else None
+        prev_closed_candle = closed[-2] if len(closed) >= 2 else None
+        candle_conf = evaluate_closed_candle_confirmation(last_closed_candle, prev_closed_candle, last_ema21)
+
         day_start = get_utc_day_start_ms(cur["t"])
         vwap_base_pv, vwap_base_vol = compute_vwap_base(closed, day_start)
         return item["coin"], {
@@ -595,8 +640,9 @@ def sync_all_candle_histories(tf: str, coin_cache: dict):
             "prev_close": prev_close,
             "base_gain": base_gain,
             "base_loss": base_loss,
-            "base_ema9": base_ema9,
-            "base_ema21": base_ema21,
+            "base_ema9": last_ema9,
+            "base_ema21": last_ema21,
+            "candle_conf": candle_conf,
             "vwap_day_start": day_start,
             "vwap_base_pv": vwap_base_pv,
             "vwap_base_vol": vwap_base_vol,
@@ -671,10 +717,11 @@ def scanner_worker():
             vwap, vwap_diff = compute_live_vwap(c, price)
             ema9 = compute_live_ema(c.get("base_ema9"), price, 9)
             ema21 = compute_live_ema(c.get("base_ema21"), price, 21)
+            candle_conf = c.get("candle_conf") or {}
             funding = c.get("funding")
 
             sig = evaluate_signal(price, rsi, vwap, funding, cfg)
-            scalp = evaluate_scalp_setup(price, rsi, vwap, ema9, ema21, cfg)
+            scalp = evaluate_scalp_setup(price, rsi, vwap, ema9, ema21, candle_conf, cfg)
             feed_name = batch_feed or c.get("source", "Live")
 
             scanned_rows.append({
@@ -692,6 +739,7 @@ def scanner_worker():
                 "emaTrend": scalp["trend"],
                 "scalpCode": scalp["code"],
                 "scalpLabel": scalp["label"],
+                "candleNote": candle_conf.get("note", ""),
                 "funding": funding,
                 "rsi": rsi,
                 "signal": sig,
@@ -752,18 +800,17 @@ def scanner_worker():
 
 
 # =============================================================================
-# 7. EMBEDDED HTML PAGES ("/", "/nifty", "/portfolio")
+# 7. EMBEDDED HTML DASHBOARD
 # =============================================================================
 DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Combined VWAP + 9/21 EMA + 14-RSI Scalping Terminal — J.A.R.V.I.S.</title>
+  <title>Strict 15m VWAP + 9/21 EMA + 14-RSI Terminal — J.A.R.V.I.S.</title>
   <style>
     :root {
-      --bg-main: #030914; --bg-header: rgba(5, 13, 27, 0.72); --bg-card: rgba(8, 18, 36, 0.34);
-      --border: rgba(56, 189, 248, 0.22); --border-light: rgba(103, 232, 249, 0.35);
+      --bg-main: #030914; --border: rgba(56, 189, 248, 0.22); --border-light: rgba(103, 232, 249, 0.35);
       --text-main: #f1f5f9; --text-muted: #94a3b8; --text-dim: #64748b;
       --green: #10b981; --green-bg: rgba(16, 185, 129, 0.16); --green-border: rgba(16, 185, 129, 0.42);
       --red: #f43f5e; --red-bg: rgba(244, 63, 94, 0.16); --red-border: rgba(244, 63, 94, 0.42);
@@ -786,7 +833,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
     .text-green { color: var(--green); } .text-red { color: var(--red); } .text-amber { color: var(--amber); }
     .text-cyan { color: var(--cyan-light); } .text-purple { color: var(--purple-light); } .text-muted { color: var(--text-muted); } .text-dim { color: var(--text-dim); }
-    .text-right { text-align: right; } .text-center { text-align: center; } .hidden { display: none !important; }
+    .text-right { text-align: right; } .text-center { text-align: center; }
     @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pulse-dot { animation: pulseDot 1.4s infinite ease-in-out; }
     .header { position: sticky; top: 0; z-index: 40; background: rgba(5, 13, 27, 0.72); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px); }
@@ -848,13 +895,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           <div class="brand-icon mono">J.A</div>
           <div>
             <div class="brand-title">
-              <span>Combined VWAP + 9/21 EMA + 14-RSI Terminal</span>
+              <span>Strict 15m VWAP + 9/21 EMA + 14-RSI Terminal</span>
               <span id="headerTfBadge" class="pill pill-tf mono">15M</span>
-              <span class="pill pill-cloud mono">2S LIVE</span>
-              <a href="/nifty" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--amber-border); color: #fcd34d;">🇮🇳 Nifty 50</a>
-              <a href="/portfolio" class="btn" style="padding: 3px 10px; font-size: 11px; border-color: var(--purple-border); color: var(--purple-light);">💼 Portfolio</a>
+              <span class="pill pill-cloud mono">WICK + CLOSE FILTER</span>
             </div>
-            <div class="brand-sub">Session VWAP (UTC) + 9/21 EMA Pullback (±0.20%) + Wilder's 14-RSI + 8h Funding + 24/7 Telegram Bot</div>
+            <div class="brand-sub">Session VWAP (UTC) + 9/21 EMA (±0.15%) + Closed Candle Wick/Close + Wilder's 14-RSI + 24/7 TG Bot</div>
           </div>
         </div>
         <div class="live-bar">
@@ -874,10 +919,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         </div>
         <div class="control-group"><label for="longThInput" class="text-green">Long RSI &lt;</label><input id="longThInput" type="number" min="10" max="55" value="35" class="mono text-green" /></div>
         <div class="control-group"><label for="shortThInput" class="text-red">Short RSI &gt;</label><input id="shortThInput" type="number" min="45" max="90" value="70" class="mono text-red" /></div>
-        <div class="control-group"><label for="pullbackInput" class="text-cyan">Pullback ± %</label><input id="pullbackInput" type="number" step="0.05" min="0.05" max="2.0" value="0.20" class="mono text-cyan" /></div>
+        <div class="control-group"><label for="pullbackInput" class="text-cyan">Pullback ± %</label><input id="pullbackInput" type="number" step="0.05" min="0.05" max="2.0" value="0.15" class="mono text-cyan" /></div>
         <button id="vwapFilterToggleBtn" type="button" class="btn btn-vwap active"><span id="vwapFilterLabel">⚡ VWAP Filter: ON</span></button>
         <button id="fundingFilterToggleBtn" type="button" class="btn btn-funding active"><span id="fundingFilterLabel">💰 Funding Filter: ON</span></button>
-        <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 Combined TG: ON</span></button>
+        <button id="scalpAlertToggleBtn" type="button" class="btn btn-scalp active"><span id="scalpAlertLabel">🎯 Strict TG: ON</span></button>
         <button id="tgTestBtn" type="button" class="btn btn-tg active"><span>✈️ Test TG</span></button>
       </div>
     </div>
@@ -885,20 +930,20 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <main class="main container">
     <section class="kpi-grid">
       <div class="kpi-card"><div class="kpi-top"><span>Live Sync</span><span id="kpiTfTag" class="mono text-cyan">15m</span></div><div id="kpiSyncTime" class="kpi-val mono" style="font-size: 16px;">--:--:-- IST</div><div id="kpiFeedDetail" class="kpi-sub">Loading...</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span>Combined Pullbacks</span><span id="kpiPbTag" class="text-cyan mono">±0.20%</span></div><div class="kpi-val mono"><span id="kpiScalpCount" class="text-cyan">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div id="kpiScalpSub" class="kpi-sub">VWAP + 9/21 EMA + RSI</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span>Strict Pullbacks</span><span id="kpiPbTag" class="text-cyan mono">±0.15%</span></div><div class="kpi-val mono"><span id="kpiScalpCount" class="text-cyan">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div id="kpiScalpSub" class="kpi-sub">RSI 48–62 L / 38–52 S + Wick</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>RSI Long Signals</span><span class="text-green">LIVE</span></div><div class="kpi-val mono"><span id="kpiLongCount" class="text-green">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Oversold + VWAP + Funding</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>RSI Short Signals</span><span class="text-red">LIVE</span></div><div class="kpi-val mono"><span id="kpiShortCount" class="text-red">0</span><span class="text-dim" style="font-size: 12px;">/ 10</span></div><div class="kpi-sub">Overbought + VWAP + Funding</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>Most Oversold</span><span class="text-green mono">Lowest RSI</span></div><div class="kpi-val"><span id="kpiOversoldCoin" style="font-size: 16px;">--</span><span id="kpiOversoldRsi" class="mono text-green">--</span></div><div id="kpiOversoldPrice" class="kpi-sub mono">Mark: --</div></div>
       <div class="kpi-card"><div class="kpi-top"><span>Most Overbought</span><span class="text-red mono">Highest RSI</span></div><div class="kpi-val"><span id="kpiOverboughtCoin" style="font-size: 16px;">--</span><span id="kpiOverboughtRsi" class="mono text-red">--</span></div><div id="kpiOverboughtPrice" class="kpi-sub mono">Mark: --</div></div>
     </section>
-    <div class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Pair</th><th class="text-right">Mark Price</th><th class="text-right">Session VWAP (UTC)</th><th class="text-right">9 / 21 EMA</th><th class="text-right">14-RSI</th><th class="text-center">Combined Setup</th><th class="text-center">RSI Signal</th><th class="text-right">8h Funding</th><th class="text-right">Target ±6.28%</th><th class="text-right">Hard SL ±2.0%</th><th class="text-center">Trade Log</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="12" style="padding:28px;text-align:center;">Connecting to live feed...</td></tr></tbody></table></div></div>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Pair</th><th class="text-right">Mark Price</th><th class="text-right">Session VWAP (UTC)</th><th class="text-right">9 / 21 EMA</th><th class="text-right">14-RSI</th><th class="text-center">Strict Scalp Setup</th><th class="text-center">Candle Check</th><th class="text-center">RSI Signal</th><th class="text-right">Target ±6.28%</th><th class="text-right">Hard SL ±2.0%</th><th class="text-center">Trade Log</th></tr></thead><tbody id="screenerTbody"><tr><td colspan="12" style="padding:28px;text-align:center;">Connecting to live feed...</td></tr></tbody></table></div></div>
   </main>
   <div id="toastWrap" class="toast-wrap"></div>
   <script>
     (() => {
       'use strict';
       const STORAGE_TRADES = 'top10_futures_rsi_v3_trades';
-      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, pullback_pct: 0.20, vwap_filter: true, funding_filter: true, scalp_alerts: true };
+      let cfg = { timeframe: '15m', long_th: 35, short_th: 70, pullback_pct: 0.15, vwap_filter: true, funding_filter: true, scalp_alerts: true };
       let coins = [];
       const fmtP = v => v == null ? '--' : v.toLocaleString('en-US', { minimumFractionDigits: Math.abs(v) < 1 ? 4 : 2, maximumFractionDigits: Math.abs(v) < 1 ? 4 : 2 });
       const fmtPct = v => v == null ? '--' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
@@ -914,7 +959,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           document.getElementById('kpiFeedDetail').textContent = d.active_feed || 'Connected';
           if (d.config) {
             cfg = d.config;
-            const pb = Number(cfg.pullback_pct ?? 0.20);
+            const pb = Number(cfg.pullback_pct ?? 0.15);
             document.getElementById('headerTfBadge').textContent = cfg.timeframe.toUpperCase();
             document.getElementById('kpiTfTag').textContent = cfg.timeframe;
             document.getElementById('kpiPbTag').textContent = `±${pb.toFixed(2)}%`;
@@ -924,7 +969,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             document.querySelectorAll('.btn-tf').forEach(b => b.classList.toggle('active', b.dataset.tf === cfg.timeframe));
             document.getElementById('vwapFilterLabel').textContent = `⚡ VWAP Filter: ${cfg.vwap_filter ? 'ON' : 'OFF'}`;
             document.getElementById('fundingFilterLabel').textContent = `💰 Funding Filter: ${cfg.funding_filter ? 'ON' : 'OFF'}`;
-            document.getElementById('scalpAlertLabel').textContent = `🎯 Combined TG: ${cfg.scalp_alerts ? 'ON' : 'OFF'}`;
+            document.getElementById('scalpAlertLabel').textContent = `🎯 Strict TG: ${cfg.scalp_alerts ? 'ON' : 'OFF'}`;
           }
           if (Array.isArray(d.coins)) {
             coins = d.coins;
@@ -933,7 +978,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             document.getElementById('kpiScalpCount').textContent = scalpHits.length;
             document.getElementById('kpiScalpSub').textContent = scalpHits.length
               ? scalpHits.map(x => `${x.coin} (${x.scalpCode === 'SCALP_LONG' ? 'LONG' : 'SHORT'})`).join(', ')
-              : `RSI 48–65 L / 35–52 S (±${Number(cfg.pullback_pct ?? 0.20).toFixed(2)}%)`;
+              : `RSI 48–62 L / 38–52 S (±${Number(cfg.pullback_pct ?? 0.15).toFixed(2)}%)`;
             document.getElementById('kpiLongCount').textContent = valid.filter(c => c.signal === 'LONG').length;
             document.getElementById('kpiShortCount').textContent = valid.filter(c => c.signal === 'SHORT').length;
             if (valid.length) {
@@ -946,10 +991,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
               document.getElementById('kpiOverboughtRsi').textContent = h.rsi.toFixed(2);
               document.getElementById('kpiOverboughtPrice').textContent = 'Mark: $' + fmtP(h.price);
             }
-            const priority = { SCALP_LONG: 0, SCALP_SHORT: 0, LONG: 1, SHORT: 1, BULL_TREND: 2, BEAR_TREND: 2, CHOP: 3, WAIT: 4 };
+            const priority = { SCALP_LONG: 0, SCALP_SHORT: 0, LONG: 1, SHORT: 1, WATCH_LONG: 2, WATCH_SHORT: 2, BULL_TREND: 3, BEAR_TREND: 3, CHOP: 4, WAIT: 5 };
             const sorted = coins.slice().sort((a, b) => {
-              const pa = priority[a.scalpCode] ?? 4;
-              const pb = priority[b.scalpCode] ?? 4;
+              const pa = priority[a.scalpCode] ?? 5;
+              const pb = priority[b.scalpCode] ?? 5;
               if (pa !== pb) return pa - pb;
               return (a.rsi ?? 999) - (b.rsi ?? 999);
             });
@@ -960,7 +1005,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
               const cls = c.signal === 'LONG' ? 'badge-long' : c.signal === 'SHORT' ? 'badge-short' : 'badge-wait';
               const scalpCls = c.scalpCode === 'SCALP_LONG' ? 'badge-long'
                 : c.scalpCode === 'SCALP_SHORT' ? 'badge-short'
-                : c.scalpCode === 'BULL_TREND' || c.scalpCode === 'BEAR_TREND' ? 'badge-cyan'
+                : (c.scalpCode === 'WATCH_LONG' || c.scalpCode === 'WATCH_SHORT') ? 'badge-wait'
+                : (c.scalpCode === 'BULL_TREND' || c.scalpCode === 'BEAR_TREND') ? 'badge-cyan'
                 : 'badge-neutral';
               const rowCls = (c.signal === 'LONG' || c.scalpCode === 'SCALP_LONG') ? 'row-long'
                 : (c.signal === 'SHORT' || c.scalpCode === 'SCALP_SHORT') ? 'row-short'
@@ -978,8 +1024,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
                 </td>
                 <td class="text-right mono" style="font-weight:700;">${c.rsi != null ? c.rsi.toFixed(2) : '--'}</td>
                 <td class="text-center"><span class="badge ${scalpCls}">${c.scalpLabel || 'WAIT'}</span></td>
+                <td class="text-center text-muted" style="font-size:11px;">${c.candleNote || '--'}</td>
                 <td class="text-center"><span class="badge ${cls}">${c.signal}</span></td>
-                <td class="text-right mono">${c.funding != null ? (c.funding * 100).toFixed(4) + '%' : '—'}</td>
                 <td class="text-right mono text-green">$${fmtP(tp)}</td>
                 <td class="text-right mono text-red">$${fmtP(sl)}</td>
                 <td class="text-center"><button type="button" class="btn btn-long" data-add-c="${c.coin}" data-add-s="LONG">+ Long</button> <button type="button" class="btn btn-short" data-add-c="${c.coin}" data-add-s="SHORT">+ Short</button></td>
@@ -1021,18 +1067,6 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 </body>
 </html>"""
 
-NIFTY_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Nifty 50 Screener</title><style>body{background:#030914;color:#f1f5f9;font-family:sans-serif;padding:24px;}a{color:#67e8f9;}</style></head>
-<body><h2>Nifty 50 Live RSI Screener</h2><p><a href="/">← Back to Combined Crypto Terminal</a> | <a href="/portfolio">Portfolio →</a></p></body>
-</html>"""
-
-PORTFOLIO_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Live Portfolio</title><style>body{background:#030914;color:#f1f5f9;font-family:sans-serif;padding:24px;}a{color:#67e8f9;}</style></head>
-<body><h2>Unified Live Portfolio &amp; P&amp;L</h2><p><a href="/">← Back to Combined Crypto Terminal</a> | <a href="/nifty">Nifty 50 →</a></p></body>
-</html>"""
-
 
 # =============================================================================
 # 8. HTTP SERVER ROUTES
@@ -1066,12 +1100,6 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(txt)))
             self.end_headers()
             self.wfile.write(txt)
-            return
-        if path in ("/nifty", "/nifty50", "/nifty-50"):
-            self._send_html(NIFTY_HTML)
-            return
-        if path in ("/portfolio", "/pnl"):
-            self._send_html(PORTFOLIO_HTML)
             return
         if path == "/api/state":
             with STATE_LOCK:
@@ -1139,7 +1167,7 @@ class WebTerminalHandler(BaseHTTPRequestHandler):
             with STATE_LOCK:
                 cfg = dict(CONFIG)
             ok, err = send_telegram(
-                f"✅ <b>Combined VWAP + 9/21 EMA + 14-RSI Bot Test OK!</b>\n"
+                f"✅ <b>Strict 15m VWAP + 9/21 EMA + 14-RSI Bot Test OK!</b>\n"
                 f"TF: <b>{cfg['timeframe'].upper()}</b> | Pullback: <b>±{cfg['pullback_pct']:.2f}%</b>\n"
                 f"⏰ {now_ist_str()}"
             )
@@ -1162,13 +1190,13 @@ def main():
 
     if SEND_STARTUP_MSG:
         send_telegram(
-            f"✅ <b>Combined VWAP + 9/21 EMA + 14-RSI Bot Started!</b>\n"
+            f"✅ <b>Strict 15m Scalping Terminal Started!</b>\n"
             f"TF: <b>{CONFIG['timeframe'].upper()}</b> | Pullback: <b>±{CONFIG['pullback_pct']:.2f}%</b>\n"
             f"⏰ {now_ist_str()}"
         )
 
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebTerminalHandler)
-    print(f"[{now_ist_str()}] bot.py listening on port {PORT}")
+    print(f"[{now_ist_str()}] Strict 15m bot.py listening on port {PORT}")
     server.serve_forever()
 
 
